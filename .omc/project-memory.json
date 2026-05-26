@@ -167,8 +167,8 @@
     },
     {
       "path": "docs\\advanced-README.md",
-      "accessCount": 2,
-      "lastAccessed": 1779800129587,
+      "accessCount": 3,
+      "lastAccessed": 1779815993346,
       "type": "file"
     },
     {
@@ -188,6 +188,24 @@
       "accessCount": 1,
       "lastAccessed": 1779802127639,
       "type": "directory"
+    },
+    {
+      "path": "docs\\manual.md",
+      "accessCount": 1,
+      "lastAccessed": 1779815993248,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1779815993329,
+      "type": "file"
+    },
+    {
+      "path": "README_zh.md",
+      "accessCount": 1,
+      "lastAccessed": 1779816028881,
+      "type": "file"
     }
   ],
   "userDirectives": []
