@@ -1,0 +1,29 @@
+# Progress - 可视化拖拽排序功能
+
+## 迭代 1 (完成)
+
+### 实现完成的功能:
+
+#### US-001 到 US-008: 全部完成
+
+**变更文件:**
+- `src/sort-gui/SortGuiModal.ts` - 模态框组件
+- `src/sort-gui/DragDropTree.ts` - 拖拽树数据结构和渲染
+- `src/sort-gui/SortSpecGenerator.ts` - YAML 生成器
+- `src/sort-gui/styles.css` - 样式文件
+- `src/main.ts` - 修改：添加 Ribbon 按钮和命令
+
+**关键实现:**
+1. TreeNode 数据结构包含 id, name, type, path, children, hasChildren, expanded, loaded
+2. HTML5 拖拽 API 实现，支持 before/after/folder 三种模式
+3. 拖拽视觉反馈：半透明、插入线、高亮文件夹
+4. 文件移动使用 Obsidian Vault API (vault.rename)
+5. SortSpecGenerator 生成符合插件格式的 YAML
+6. Ribbon 图标绑定：点击打开 SortGuiModal
+
+**验证:**
+- `yarn build` 通过
+- 现有测试通过 (580 passed)
+
+**待验证:**
+- 实际在 Obsidian 中运行时需要手动测试

@@ -1,0 +1,185 @@
+/* Custom Sort Drag & Drop - 简洁设计 */
+
+.sort-gui-view-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 0;
+}
+
+/* Header */
+.sort-gui-header {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sort-gui-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.sort-gui-icon {
+	font-size: 20px;
+}
+
+.sort-gui-title h2 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Instructions */
+.sort-gui-instructions {
+	padding: 8px 16px;
+	font-size: 12px;
+	color: var(--text-muted);
+	background: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sort-gui-instructions p {
+	margin: 0 0 2px 0;
+}
+
+.sort-gui-hint {
+	margin: 0;
+	font-size: 11px;
+	color: var(--text-faint);
+}
+
+/* Tree Container */
+.sort-gui-tree-container {
+	flex: 1;
+	overflow-y: auto;
+	padding: 8px;
+}
+
+/* Tree */
+.sort-gui-tree {
+	min-height: 100%;
+}
+
+/* Tree Item - 水平排列，不换行 */
+.sort-gui-tree-item {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	margin: 0;
+	border-radius: 4px;
+	background: transparent;
+	border: 1px solid transparent;
+	cursor: grab;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+	user-select: none;
+}
+
+.sort-gui-tree-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.sort-gui-tree-item:active {
+	background: var(--background-modifier-active);
+}
+
+/* Drop indicators */
+.sort-gui-tree-item.drop-before {
+	border-top: 2px solid var(--color-accent, #7c3aed);
+	padding-top: 5px;
+}
+
+.sort-gui-tree-item.drop-after {
+	border-bottom: 2px solid var(--color-accent, #7c3aed);
+	padding-bottom: 5px;
+}
+
+.sort-gui-tree-item.drag-over-folder {
+	background: var(--background-modifier-hover) !important;
+	border: 1px dashed var(--color-accent, #7c3aed);
+}
+
+/* Preview drop indicator line */
+.drop-indicator {
+	height: 2px;
+	background: var(--color-accent, #7c3aed);
+	margin: 3px 0;
+	border-radius: 1px;
+}
+
+/* Icon */
+.sort-gui-item-icon {
+	font-size: 14px;
+	width: 18px;
+	text-align: center;
+	flex-shrink: 0;
+}
+
+/* Toggle */
+.sort-gui-item-toggle {
+	font-size: 14px;
+	color: var(--text-muted);
+	width: 18px;
+	height: 18px;
+	line-height: 18px;
+	text-align: center;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.sort-gui-item-toggle:hover {
+	color: var(--text-normal);
+}
+
+/* Name - 不换行，溢出省略 */
+.sort-gui-item-name {
+	flex: 1;
+	font-size: 13px;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Children container */
+.sort-gui-tree-children {
+	margin-left: 12px;
+	padding-left: 12px;
+	border-left: 1px solid var(--background-modifier-border);
+}
+
+/* Buttons */
+.sort-gui-buttons {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 10px 16px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.sort-gui-buttons .button-group {
+	display: flex;
+	gap: 8px;
+}
+
+/* Scrollbar styling */
+.sort-gui-tree-container::-webkit-scrollbar {
+	width: 6px;
+}
+
+.sort-gui-tree-container::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.sort-gui-tree-container::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 3px;
+}
+
+/* Dragging state */
+.sort-gui-tree-item.dragging {
+	opacity: 0.4;
+}

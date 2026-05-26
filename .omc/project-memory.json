@@ -1,0 +1,194 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1779796943151,
+  "projectRoot": "D:\\Projects\\obsidian-custom-sort",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "esbuild",
+        "version": "0.25.5",
+        "category": "build"
+      },
+      {
+        "name": "jest",
+        "version": "29.7.0",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "yarn",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "cd D:/Projects/obsidian-custom-sort && pnpm build 2>&1",
+    "testCommand": "yarn test",
+    "lintCommand": null,
+    "devCommand": "yarn dev",
+    "scripts": {
+      "dev": "node esbuild.config.mjs",
+      "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+      "version": "node version-bump.mjs && git add manifest.json versions.json",
+      "test": "jest"
+    }
+  },
+  "conventions": {
+    "namingStyle": "camelCase/PascalCase",
+    "importStyle": "ES modules",
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "master",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 4,
+      "lastAccessed": 1779796943093,
+      "keyFiles": [
+        "advanced-README.md",
+        "manual.md",
+        "syntax-reference.md",
+        "wildcards.md"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 3,
+      "lastAccessed": 1779796943094,
+      "keyFiles": [
+        "custom-sort-plugin.ts",
+        "main.ts",
+        "settings.ts"
+      ]
+    },
+    "docs\\examples": {
+      "path": "docs\\examples",
+      "purpose": "Example code",
+      "fileCount": 0,
+      "lastAccessed": 1779796943125,
+      "keyFiles": []
+    },
+    "src\\test": {
+      "path": "src\\test",
+      "purpose": "Test files",
+      "fileCount": 1,
+      "lastAccessed": 1779796943125,
+      "keyFiles": [
+        "mocks.ts"
+      ]
+    },
+    "src\\types": {
+      "path": "src\\types",
+      "purpose": "Type definitions",
+      "fileCount": 1,
+      "lastAccessed": 1779796943126,
+      "keyFiles": [
+        "types.d.ts"
+      ]
+    },
+    "src\\utils": {
+      "path": "src\\utils",
+      "purpose": "Utility functions",
+      "fileCount": 5,
+      "lastAccessed": 1779796943126,
+      "keyFiles": [
+        "Bookmarks Core Plugin integration design.md",
+        "BookmarksCorePluginSignature.ts",
+        "ObsidianIconFolderPluginSignature.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src\\sort-gui\\DragDropTree.ts",
+      "accessCount": 162,
+      "lastAccessed": 1779814224435,
+      "type": "file"
+    },
+    {
+      "path": "src\\sort-gui\\SortGuiView.ts",
+      "accessCount": 34,
+      "lastAccessed": 1779814197226,
+      "type": "file"
+    },
+    {
+      "path": "src\\main.ts",
+      "accessCount": 19,
+      "lastAccessed": 1779803221473,
+      "type": "file"
+    },
+    {
+      "path": "src\\sort-gui\\SortSpecGenerator.ts",
+      "accessCount": 11,
+      "lastAccessed": 1779812366253,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 6,
+      "lastAccessed": 1779811562682,
+      "type": "directory"
+    },
+    {
+      "path": "src\\sort-gui\\styles.css",
+      "accessCount": 5,
+      "lastAccessed": 1779803145134,
+      "type": "file"
+    },
+    {
+      "path": "docs\\advanced-README.md",
+      "accessCount": 2,
+      "lastAccessed": 1779800129587,
+      "type": "file"
+    },
+    {
+      "path": "src\\sort-gui\\SortGuiModal.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779800129655,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 1,
+      "lastAccessed": 1779802104412,
+      "type": "directory"
+    },
+    {
+      "path": "src\\sort-gui",
+      "accessCount": 1,
+      "lastAccessed": 1779802127639,
+      "type": "directory"
+    }
+  ],
+  "userDirectives": []
+}

@@ -1,0 +1,99 @@
+{
+  "title": "可视化拖拽排序功能",
+  "stories": [
+    {
+      "id": "US-001",
+      "story": "创建 sort-gui 模块目录结构和基础文件",
+      "description": "创建 src/sort-gui/ 目录及基础 TypeScript 文件",
+      "acceptanceCriteria": [
+        "src/sort-gui/ 目录存在，包含 SortGuiModal.ts, DragDropTree.ts, SortSpecGenerator.ts",
+        "TypeScript 编译通过 (yarn build)",
+        "代码符合项目 ESLint 规范"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "story": "实现 DragDropTree 数据结构和树渲染",
+      "description": "实现 TreeNode 数据结构和树形结构的 DOM 渲染",
+      "acceptanceCriteria": [
+        "TreeNode 接口定义完整（id, name, type, path, children, hasChildren, expanded）",
+        "能够从 Vault 构建根目录树结构",
+        "文件夹可展开/折叠，显示子项",
+        "支持懒加载子目录"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "story": "实现 HTML5 拖拽排序功能",
+      "description": "实现文件/文件夹的拖拽排序，包括视觉反馈",
+      "acceptanceCriteria": [
+        "支持拖拽文件和文件夹",
+        "拖拽源半透明显示",
+        "插入位置有视觉指示线（上/下）",
+        "拖拽到文件夹时高亮显示",
+        "拖拽后节点顺序正确更新"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "story": "实现文件/文件夹移动功能",
+      "description": "拖拽文件到文件夹时移动文件到目标文件夹",
+      "acceptanceCriteria": [
+        "拖拽到文件夹上方时移动到目标文件夹",
+        "使用 Obsidian Vault API 正确移动文件/文件夹",
+        "移动后 sortspec.md 中的路径正确更新"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-005",
+      "story": "实现 SortSpecGenerator 生成 YAML",
+      "description": "生成符合插件格式的 sorting-spec YAML",
+      "acceptanceCriteria": [
+        "生成的 YAML 格式正确，可被现有解析器解析",
+        "支持 target-folder: / 全库排序",
+        "文件/文件夹路径正确缩进"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-006",
+      "story": "创建 SortGuiModal 并绑定 Ribbon 按钮",
+      "description": "创建模态框并绑定到 Ribbon 图标",
+      "acceptanceCriteria": [
+        "Ribbon 图标正确显示在左侧栏",
+        "点击图标打开模态框",
+        "模态框内正确显示拖拽排序树",
+        "关闭按钮可关闭模态框"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-007",
+      "story": "实现保存和取消功能",
+      "description": "保存排序到 sortspec.md，取消不保存",
+      "acceptanceCriteria": [
+        "保存按钮将排序写入 sortspec.md",
+        "取消按钮关闭模态框不保存",
+        "sortspec.md 格式正确",
+        "保存后 Obsidian 可以刷新排序"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-008",
+      "story": "添加样式文件",
+      "description": "添加拖拽排序界面的样式",
+      "acceptanceCriteria": [
+        "样式文件存在且正确引入",
+        "树形结构缩进显示正确",
+        "文件夹/文件图标显示正确",
+        "拖拽视觉反馈样式正确"
+      ],
+      "passes": true
+    }
+  ]
+}
