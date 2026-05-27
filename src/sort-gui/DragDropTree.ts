@@ -37,6 +37,20 @@ export class DragDropTree {
 	async init(): Promise<void> {
 		await this.buildTree();
 		this.render();
+		this.registerVaultListener();
+	}
+
+	// Register vault change listener for real-time updates
+	private registerVaultListener(): void {
+		this.app.vault.on('delete', (file) => {
+			this.reload();
+		});
+		this.app.vault.on('create', (file) => {
+			this.reload();
+		});
+		this.app.vault.on('rename', (file, oldPath) => {
+			this.reload();
+		});
 	}
 
 	async reload(): Promise<void> {
@@ -390,8 +404,8 @@ export class DragDropTree {
 					item.setIcon('pencil');
 					item.onClick(async () => {
 						const file = this.app.vault.getAbstractFileByPath(node.path);
-						if (file instanceof TFile) {
-							// @ts-ignore
+						if (file) {
+							// @ts-ignore - Obsidian internal API
 							this.app.fileManager.startRenameFile(file);
 						}
 					});
@@ -417,6 +431,8 @@ export class DragDropTree {
 						const file = this.app.vault.getAbstractFileByPath(node.path);
 						if (file) {
 							await this.app.vault.delete(file);
+							// Refresh tree after delete
+							await this.reload();
 						}
 					});
 				});
@@ -474,6 +490,8 @@ export class DragDropTree {
 						const folder = this.app.vault.getFolderByPath(node.path);
 						if (folder) {
 							await this.app.vault.delete(folder, true);
+							// Refresh tree after delete
+							await this.reload();
 						}
 					});
 				});
@@ -571,7 +589,7 @@ export class DragDropTree {
 		e.preventDefault();
 	}
 
-	private handleDrop(e: DragEvent, targetNode: TreeNode): void {
+	private async handleDrop(e: DragEvent, targetNode: TreeNode): Promise<void> {
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -633,7 +651,7 @@ export class DragDropTree {
 
 		// Same folder: just reorder
 		if (sourcePath === targetParentPath || shouldReorder) {
-			this.reorderItem(this.dragNode, targetNode, mode);
+			await this.reorderItem(this.dragNode, targetNode, mode);
 			this.render();
 			return;
 		}
@@ -911,7 +929,7 @@ export class DragDropTree {
 	/**
 	 * Reorder item: move dragNode to be before or after targetNode
 	 */
-	private reorderItem(dragNode: TreeNode, targetNode: TreeNode, mode: 'before' | 'after'): void {
+	private async reorderItem(dragNode: TreeNode, targetNode: TreeNode, mode: 'before' | 'after'): Promise<void> {
 		// Find the siblings array that contains targetNode
 		const siblings = this.findParentArray(this.tree, targetNode.id);
 		if (!siblings) {
@@ -968,7 +986,7 @@ export class DragDropTree {
 		}
 
 		// Update the sortspec file for the folder that contains these siblings
-		this.syncSiblingSortSpec(siblings);
+		await this.syncSiblingSortSpec(siblings);
 	}
 
 	/**
