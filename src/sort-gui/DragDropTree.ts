@@ -1,4 +1,4 @@
-import { App, TFolder, Notice, TFile } from 'obsidian';
+import { App, TFolder, Notice, TFile, Menu } from 'obsidian';
 
 export interface TreeNode {
 	id: string;
@@ -64,13 +64,13 @@ export class DragDropTree {
 		}
 
 		const file = this.app.vault.getAbstractFileByPath(this.sortSpecFilePath);
-		if (!(file instanceof TFile)) {
+		if (file instanceof TFile) {
 			this.sortOrdersByFolder.clear();
 			return;
 		}
 
 		try {
-			const content = await this.app.vault.read(file);
+			const content = await this.app.vault.read(file as TFile);
 			const match = content.match(/sorting-spec:\s*\|\s*([\s\S]*?)(?=^---|\n---|\n$)/m);
 			if (match) {
 				this.parseSortSpec(match[1], this.currentFolderPath);
@@ -286,8 +286,8 @@ export class DragDropTree {
 		itemEl.dataset.id = node.id;
 		itemEl.dataset.type = node.type;
 
-		// Click to expand/collapse folders
-		itemEl.addEventListener('click', () => {
+		// Click to expand/collapse folders or open files
+		itemEl.addEventListener('click', (e) => {
 			if (node.type === 'folder' && node.hasChildren) {
 				node.expanded = !node.expanded;
 				if (node.expanded) {
@@ -296,7 +296,27 @@ export class DragDropTree {
 					this.expandedPaths.delete(node.path);
 				}
 				this.render();
+			} else if (node.type === 'file') {
+				// Open file on left click
+				const file = this.app.vault.getAbstractFileByPath(node.path);
+				if (file instanceof TFile) {
+					this.app.workspace.getLeaf(false).openFile(file);
+				}
 			}
+		});
+
+		// Right-click to show Obsidian context menu
+		itemEl.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			const file = this.app.vault.getAbstractFileByPath(node.path);
+			if (!file) return;
+
+			// Create and show context menu
+			const menu = new Menu();
+
+			// Use Obsidian's native file menu
+			this.app.workspace.trigger('file-menu', menu, file, 'custom-sort-view');
+			menu.showAtPosition({ x: e.clientX, y: e.clientY } as any);
 		});
 
 		// Drag events
@@ -717,7 +737,7 @@ export class DragDropTree {
 	}
 
 	private refreshFileExplorer(): void {
-		this.app.workspace.getLeavesOfType('file-explorer').forEach((leaf) => {
+		this.app.workspace.getLeavesOfType('custom-sort-view').forEach((leaf) => {
 			const view = leaf.view as any;
 			if (view && typeof view.requestSort === 'function') {
 				view.requestSort();

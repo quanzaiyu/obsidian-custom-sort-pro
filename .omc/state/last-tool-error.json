@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd D:/Projects/obsidian-custom-sort && pnpm build 2>&1\",\"timeout\":120000,\"description\":\"Build project\"}",
-  "error": "Exit code 126\n\n> obsidian-custom-sort@3.1.6 build D:\\Projects\\obsidian-custom-sort\n> tsc -noEmit -skipLibCheck && node esbuild.config.mjs production\n\nsrc/sort-gui/DragDropTree.ts(116,10): error TS2393: Duplicate function implementation.\r\nsrc/sort-gui/DragDropTree.ts(200,10): error TS2393: Duplicate function implementation.\r\n ELIFECYCLE  Command failed with exit code 2.",
-  "timestamp": "2026-05-26T16:15:21.511Z",
-  "retry_count": 1
+  "tool_input_preview": "{\"command\":\"cd D:/Projects/obsidian-custom-sort && sed -i 's/if (!(file instanceof TFile))/if (file instanceof TFile)/' src/sort-gui/DragDropTree.ts && pnpm build 2>&1\",\"timeout\":120000,\"description\":...",
+  "error": "Exit code 126\n\n> obsidian-custom-sort@3.1.6 build D:\\Projects\\obsidian-custom-sort\n> tsc -noEmit -skipLibCheck && node esbuild.config.mjs production\n\nsrc/sort-gui/DragDropTree.ts(73,46): error TS2345: Argument of type 'TAbstractFile | null' is not assignable to parameter of type 'TFile'.\r\n  Type 'null' is not assignable to type 'TFile'.\r\n ELIFECYCLE  Command failed with exit code 2.",
+  "timestamp": "2026-05-27T14:23:28.575Z",
+  "retry_count": 3
 }

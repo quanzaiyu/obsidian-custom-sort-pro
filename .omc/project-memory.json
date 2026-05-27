@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1779796943151,
-  "projectRoot": "D:\\Projects\\obsidian-custom-sort",
+  "lastScanned": 1779891208861,
+  "projectRoot": "d:\\Projects\\obsidian-custom-sort",
   "techStack": {
     "languages": [
       {
@@ -33,14 +33,14 @@
         "category": "testing"
       }
     ],
-    "packageManager": "yarn",
+    "packageManager": "pnpm",
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd D:/Projects/obsidian-custom-sort && pnpm build 2>&1",
-    "testCommand": "yarn test",
+    "buildCommand": "cd D:/Projects/obsidian-custom-sort && sed -i '73s/read(file)/read(file as TFile)/' src/sort-gui/DragDropTree.ts && pnpm build 2>&1",
+    "testCommand": "pnpm test",
     "lintCommand": null,
-    "devCommand": "yarn dev",
+    "devCommand": "pnpm dev",
     "scripts": {
       "dev": "node esbuild.config.mjs",
       "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
@@ -62,17 +62,24 @@
       "src"
     ],
     "gitBranches": {
-      "defaultBranch": "master",
+      "defaultBranch": "main",
       "branchingStrategy": null
     }
   },
   "customNotes": [],
   "directoryMap": {
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 0,
+      "lastAccessed": 1779891208818,
+      "keyFiles": []
+    },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 4,
-      "lastAccessed": 1779796943093,
+      "lastAccessed": 1779891208819,
       "keyFiles": [
         "advanced-README.md",
         "manual.md",
@@ -84,7 +91,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 3,
-      "lastAccessed": 1779796943094,
+      "lastAccessed": 1779891208842,
       "keyFiles": [
         "custom-sort-plugin.ts",
         "main.ts",
@@ -95,14 +102,14 @@
       "path": "docs\\examples",
       "purpose": "Example code",
       "fileCount": 0,
-      "lastAccessed": 1779796943125,
+      "lastAccessed": 1779891208843,
       "keyFiles": []
     },
     "src\\test": {
       "path": "src\\test",
       "purpose": "Test files",
       "fileCount": 1,
-      "lastAccessed": 1779796943125,
+      "lastAccessed": 1779891208843,
       "keyFiles": [
         "mocks.ts"
       ]
@@ -111,7 +118,7 @@
       "path": "src\\types",
       "purpose": "Type definitions",
       "fileCount": 1,
-      "lastAccessed": 1779796943126,
+      "lastAccessed": 1779891208843,
       "keyFiles": [
         "types.d.ts"
       ]
@@ -120,7 +127,7 @@
       "path": "src\\utils",
       "purpose": "Utility functions",
       "fileCount": 5,
-      "lastAccessed": 1779796943126,
+      "lastAccessed": 1779891208843,
       "keyFiles": [
         "Bookmarks Core Plugin integration design.md",
         "BookmarksCorePluginSignature.ts",
@@ -131,8 +138,8 @@
   "hotPaths": [
     {
       "path": "src\\sort-gui\\DragDropTree.ts",
-      "accessCount": 162,
-      "lastAccessed": 1779814224435,
+      "accessCount": 175,
+      "lastAccessed": 1779891831833,
       "type": "file"
     },
     {
@@ -143,8 +150,8 @@
     },
     {
       "path": "src\\main.ts",
-      "accessCount": 19,
-      "lastAccessed": 1779803221473,
+      "accessCount": 21,
+      "lastAccessed": 1779891714242,
       "type": "file"
     },
     {
@@ -155,8 +162,8 @@
     },
     {
       "path": "src",
-      "accessCount": 6,
-      "lastAccessed": 1779811562682,
+      "accessCount": 9,
+      "lastAccessed": 1779891723543,
       "type": "directory"
     },
     {
