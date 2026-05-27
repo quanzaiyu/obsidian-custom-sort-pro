@@ -138,14 +138,14 @@
   "hotPaths": [
     {
       "path": "src\\sort-gui\\DragDropTree.ts",
-      "accessCount": 190,
-      "lastAccessed": 1779893438260,
+      "accessCount": 227,
+      "lastAccessed": 1779897630551,
       "type": "file"
     },
     {
       "path": "src\\sort-gui\\SortGuiView.ts",
-      "accessCount": 35,
-      "lastAccessed": 1779893341751,
+      "accessCount": 39,
+      "lastAccessed": 1779897561771,
       "type": "file"
     },
     {
@@ -174,8 +174,8 @@
     },
     {
       "path": "src",
-      "accessCount": 9,
-      "lastAccessed": 1779891723543,
+      "accessCount": 10,
+      "lastAccessed": 1779896221575,
       "type": "directory"
     },
     {
@@ -230,6 +230,12 @@
       "path": "styles.css",
       "accessCount": 1,
       "lastAccessed": 1779893337071,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1779896211467,
       "type": "file"
     }
   ],

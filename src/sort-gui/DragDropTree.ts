@@ -1,4 +1,4 @@
-import { App, TFolder, Notice, TFile, Menu } from 'obsidian';
+import { App, TFolder, Notice, TFile, Menu, parseYaml } from 'obsidian';
 import { IconPickerModal } from './IconPickerModal';
 
 export interface TreeNode {
@@ -25,6 +25,8 @@ export class DragDropTree {
 	private dragNode: TreeNode | null = null;
 	private dropMode: 'before' | 'after' | 'folder' | null = null;
 	private expandedPaths: Set<string> = new Set();
+	// Store custom icons: "folderPath:name" -> icon
+	private customIconsByPath: Map<string, string> = new Map();
 
 	constructor(app: App, container: HTMLElement, sortSpecFilePath: string | null = null) {
 		this.app = app;
@@ -144,16 +146,36 @@ export class DragDropTree {
 
 		try {
 			const content = await this.app.vault.read(sortspecFile);
-			const match = content.match(/sorting-spec:\s*\|\s*([\s\S]*?)(?=^---|\n---|\n$)/m);
-			if (match) {
-				const lines = match[1].split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
-				let order = 0;
-				const folderMap = new Map<string, number>();
-				this.sortOrdersByFolder.set(folder.path, folderMap);
 
-				for (const line of lines) {
-					if (line.startsWith('target-folder:')) continue;
-					folderMap.set(line, order++);
+			// Extract frontmatter using YAML
+			const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+			if (!frontmatterMatch) return;
+
+			const frontmatter = parseYaml(frontmatterMatch[1]);
+
+			// Parse sorting-spec (list format)
+			const sortingSpec = frontmatter?.['sorting-spec'];
+			if (sortingSpec && Array.isArray(sortingSpec)) {
+				const folderMap = new Map<string, number>();
+				let order = 0;
+				for (const item of sortingSpec) {
+					if (typeof item === 'string') {
+						folderMap.set(item, order++);
+					}
+				}
+				if (folderMap.size > 0) {
+					this.sortOrdersByFolder.set(folder.path, folderMap);
+				}
+			}
+
+			// Parse custom-icons (map format)
+			const customIcons = frontmatter?.['custom-icons'];
+			if (customIcons && typeof customIcons === 'object') {
+				for (const [name, icon] of Object.entries(customIcons)) {
+					if (typeof name === 'string' && typeof icon === 'string') {
+						const key = `${folder.path}:${name}`;
+						this.customIconsByPath.set(key, icon);
+					}
 				}
 			}
 		} catch (error) {
@@ -184,6 +206,12 @@ export class DragDropTree {
 			const folderMap = this.sortOrdersByFolder.get(folder.path);
 			if (folderMap && folderMap.has(nameForSort)) {
 				node.sortOrder = folderMap.get(nameForSort);
+			}
+
+			// Load custom icon from the icons map
+			const iconKey = `${folder.path}:${nameForSort}`;
+			if (this.customIconsByPath.has(iconKey)) {
+				node.customIcon = this.customIconsByPath.get(iconKey);
 			}
 
 			nodes.push(node);
@@ -313,18 +341,145 @@ export class DragDropTree {
 			}
 		});
 
-		// Right-click to show Obsidian context menu
+		// Right-click to show context menu
 		itemEl.addEventListener('contextmenu', (e) => {
 			e.preventDefault();
-			const file = this.app.vault.getAbstractFileByPath(node.path);
-			if (!file) return;
 
-			// Create and show context menu
 			const menu = new Menu();
 
-			// Use Obsidian's native file menu
-			this.app.workspace.trigger('file-menu', menu, file, 'custom-sort-view');
-			menu.showAtPosition({ x: e.clientX, y: e.clientY } as any);
+			if (node.type === 'file') {
+				// File operations
+				menu.addItem((item) => {
+					item.setTitle('在新标签页中打开');
+					item.setIcon('file-text');
+					item.onClick(() => {
+						const file = this.app.vault.getAbstractFileByPath(node.path);
+						if (file instanceof TFile) {
+							this.app.workspace.getLeaf(false).openFile(file);
+						}
+					});
+				});
+
+				menu.addItem((item) => {
+					item.setTitle('在右侧边栏中打开');
+					item.setIcon('file-text');
+					item.onClick(() => {
+						const file = this.app.vault.getAbstractFileByPath(node.path);
+						if (file instanceof TFile) {
+							this.app.workspace.getLeaf('split', 'vertical').openFile(file);
+						}
+					});
+				});
+
+				menu.addItem((item) => {
+					item.setTitle('在新窗口中打开');
+					item.setIcon('pop-suggest');
+					item.onClick(() => {
+						const file = this.app.vault.getAbstractFileByPath(node.path);
+						if (file instanceof TFile) {
+							// @ts-ignore
+							this.app.openWithDefaultApp(file.path);
+						}
+					});
+				});
+
+				menu.addSeparator();
+
+				menu.addItem((item) => {
+					item.setTitle('重命名');
+					item.setIcon('pencil');
+					item.onClick(async () => {
+						const file = this.app.vault.getAbstractFileByPath(node.path);
+						if (file instanceof TFile) {
+							// @ts-ignore
+							this.app.fileManager.startRenameFile(file);
+						}
+					});
+				});
+
+				menu.addItem((item) => {
+					item.setTitle('创建副本');
+					item.setIcon('copy');
+					item.onClick(async () => {
+						const file = this.app.vault.getAbstractFileByPath(node.path);
+						if (file instanceof TFile) {
+							const newName = file.basename + '-副本.' + file.extension;
+							const newPath = node.path.replace(file.name, newName);
+							await this.app.vault.copy(file, newPath);
+						}
+					});
+				});
+
+				menu.addItem((item) => {
+					item.setTitle('删除');
+					item.setIcon('trash');
+					item.onClick(async () => {
+						const file = this.app.vault.getAbstractFileByPath(node.path);
+						if (file) {
+							await this.app.vault.delete(file);
+						}
+					});
+				});
+
+				menu.addSeparator();
+
+				menu.addItem((item) => {
+					item.setTitle('复制路径');
+					item.setIcon('clippy');
+					item.onClick(() => {
+						navigator.clipboard.writeText(node.path);
+					});
+				});
+
+			} else {
+				// Folder operations
+				menu.addItem((item) => {
+					item.setTitle('在文件列表中显示');
+					item.setIcon('folder');
+					item.onClick(() => {
+						// Trigger file explorer to navigate to this folder
+						// @ts-ignore
+						if (this.app.internalPlugins.getPluginById('file-explorer')) {
+							this.app.workspace.getLeavesOfType('file-explorer').forEach((leaf) => {
+								const view = leaf.view as any;
+								if (view && view.revealInFolder) {
+									const folder = this.app.vault.getFolderByPath(node.path);
+									if (folder) {
+										view.revealInFolder(folder);
+									}
+								}
+							});
+						}
+					});
+				});
+
+				menu.addSeparator();
+
+				menu.addItem((item) => {
+					item.setTitle('重命名');
+					item.setIcon('pencil');
+					item.onClick(async () => {
+						const folder = this.app.vault.getFolderByPath(node.path);
+						if (folder) {
+							// @ts-ignore
+							this.app.fileManager.startRenameFile(folder);
+						}
+					});
+				});
+
+				menu.addItem((item) => {
+					item.setTitle('删除');
+					item.setIcon('trash');
+					item.onClick(async () => {
+						const folder = this.app.vault.getFolderByPath(node.path);
+						if (folder) {
+							await this.app.vault.delete(folder, true);
+						}
+					});
+				});
+			}
+
+			menu.showAtPosition({ x: e.clientX, y: e.clientY });
 		});
 
 		// Drag events
@@ -817,7 +972,7 @@ export class DragDropTree {
 	}
 
 	/**
-	 * Sync the sortspec for a folder's children after reordering
+	 * Sync the sortspec for a folder's children after reordering using processFrontMatter
 	 */
 	private async syncSiblingSortSpec(siblings: TreeNode[]): Promise<void> {
 		if (siblings.length === 0) return;
@@ -826,39 +981,48 @@ export class DragDropTree {
 		const firstNode = siblings[0];
 		const folderPath = this.getParentPath(firstNode.path);
 
-		// Build new sortspec content
-		const vault = this.app.vault;
 		const sortspecPath = folderPath === '/' ? '/sortspec.md' : `${folderPath}/sortspec.md`;
+		let sortspecFile = this.app.vault.getAbstractFileByPath(sortspecPath);
 
-		// Get the actual folder to check which files exist
-		const folder = folderPath === '/' ? vault.getRoot() : vault.getFolderByPath(folderPath);
-		if (!folder) return;
-
-		const existingNames = new Set(
-			folder.children.map(c => c.name.endsWith('.md') ? c.name.slice(0, -3) : c.name)
-		);
-
-		const specLines: string[] = [];
-		for (const node of siblings) {
-			const name = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
-			// Only include items that still exist in the folder
-			if (existingNames.has(name)) {
-				specLines.push(`    ${name}`);
+		if (!(sortspecFile instanceof TFile)) {
+			// Create new file with minimal content
+			try {
+				await this.app.vault.create(sortspecPath, '---\n{}\n---');
+				sortspecFile = this.app.vault.getAbstractFileByPath(sortspecPath);
+				if (!(sortspecFile instanceof TFile)) return;
+			} catch (error) {
+				console.error('创建sortspec文件失败:', error);
+				return;
 			}
 		}
 
-		const newContent = `---\nsorting-spec: |\n    target-folder: .\n${specLines.join('\n')}\n---\n`;
-		const existingFile = vault.getAbstractFileByPath(sortspecPath);
+		await this.doSyncSortSpec(sortspecFile, siblings, folderPath);
+	}
 
+	private async doSyncSortSpec(file: TFile, siblings: TreeNode[], folderPath: string): Promise<void> {
 		try {
-			if (existingFile instanceof TFile) {
-				await vault.modify(existingFile, newContent);
-			} else {
-				await vault.create(sortspecPath, newContent);
-			}
+			await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+				// Build sorting-spec array from siblings
+				const sortArray: string[] = [];
+				for (const node of siblings) {
+					const name = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
+					sortArray.push(name);
+				}
+
+				// Update sorting-spec
+				if (sortArray.length > 0) {
+					frontmatter['sorting-spec'] = sortArray;
+				} else {
+					delete frontmatter['sorting-spec'];
+				}
+
+				// Keep existing custom-icons unchanged
+			});
 
 			// Reload the sortspec for this folder
-			const folder = folderPath === '/' ? vault.getRoot() : vault.getFolderByPath(folderPath);
+			const folder = folderPath === '/'
+				? this.app.vault.getRoot()
+				: this.app.vault.getFolderByPath(folderPath);
 			if (folder) {
 				this.sortOrdersByFolder.delete(folderPath);
 				await this.loadSubfolderSortSpec(folder);
@@ -989,41 +1153,52 @@ export class DragDropTree {
 	}
 
 	/**
-	 * Save custom icon to sortspec
+	 * Save custom icon to sortspec using processFrontMatter
 	 */
 	private async saveCustomIcon(node: TreeNode): Promise<void> {
 		const folderPath = this.getParentPath(node.path);
 		const sortspecPath = folderPath === '/' ? '/sortspec.md' : `${folderPath}/sortspec.md`;
-		const file = this.app.vault.getAbstractFileByPath(sortspecPath);
+		let file = this.app.vault.getAbstractFileByPath(sortspecPath);
+		const nameForSort = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
+		const iconKey = `${folderPath}:${nameForSort}`;
 
-		if (!(file instanceof TFile)) return;
+		// Update memory map first
+		if (node.customIcon) {
+			this.customIconsByPath.set(iconKey, node.customIcon);
+		} else {
+			this.customIconsByPath.delete(iconKey);
+		}
+
+		// If file doesn't exist, create it
+		if (!(file instanceof TFile)) {
+			try {
+				const defaultContent = `---\nsorting-spec:\n  - target-folder: .\n---\n`;
+				await this.app.vault.create(sortspecPath, defaultContent);
+				file = this.app.vault.getAbstractFileByPath(sortspecPath);
+				if (!(file instanceof TFile)) return;
+			} catch (error) {
+				console.error('创建sortspec文件失败:', error);
+				return;
+			}
+		}
 
 		try {
-			const content = await this.app.vault.read(file);
-			const lines = content.split('\n');
-			const nameForSort = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
-
-			// Find and update the line for this node
-			const newLines: string[] = [];
-			for (const line of lines) {
-				const trimmed = line.trim();
-				// Skip icon metadata lines
-				if (trimmed.startsWith(':icon ')) {
-					continue;
-				}
-				// Check if this line contains the node name
-				if (trimmed === nameForSort || trimmed.endsWith(' ' + nameForSort)) {
-					newLines.push(line);
-					// Add icon line after this
-					if (node.customIcon) {
-						newLines.push(`    :icon ${node.customIcon} ${nameForSort}`);
+			await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+				// Only update custom-icons, keep sorting-spec unchanged
+				const iconsMap: { [key: string]: string } = {};
+				for (const [key, icon] of this.customIconsByPath) {
+					if (key.startsWith(folderPath + ':')) {
+						const itemName = key.substring(folderPath.length + 1);
+						iconsMap[itemName] = icon;
 					}
-				} else {
-					newLines.push(line);
 				}
-			}
 
-			await this.app.vault.modify(file, newLines.join('\n'));
+				if (Object.keys(iconsMap).length > 0) {
+					frontmatter['custom-icons'] = iconsMap;
+				} else {
+					delete frontmatter['custom-icons'];
+				}
+			});
 		} catch (error) {
 			console.error('保存自定义图标失败:', error);
 		}

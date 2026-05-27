@@ -1,5 +1,5 @@
-import { ItemView, WorkspaceLeaf, ButtonComponent, Notice, TFile } from 'obsidian';
-import { DragDropTree } from './DragDropTree';
+import { ItemView, WorkspaceLeaf, ButtonComponent, Notice, TFile, Menu } from 'obsidian';
+import { DragDropTree, TreeNode } from './DragDropTree';
 import './styles.css';
 
 export const SORT_GUI_VIEW_TYPE = 'custom-sort-drag-drop-view';
@@ -21,7 +21,7 @@ export class SortGuiView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return '自定义排序';
+		return '自定义菜单';
 	}
 
 	async onOpen(): Promise<void> {
@@ -33,14 +33,14 @@ export class SortGuiView extends ItemView {
 		headerEl.innerHTML = `
 			<div class="sort-gui-title">
 				<span class="sort-gui-icon">🎯</span>
-				<h2>自定义排序</h2>
+				<h2>自定义菜单</h2>
 			</div>
 		`;
 
 		// Instructions
 		const instructionEl = container.createDiv('sort-gui-instructions');
 		instructionEl.innerHTML = `
-			<p>拖拽项目调整顺序。拖拽到文件夹上可移入该文件夹。</p>
+			<p>拖拽项目调整顺序。拖拽到文件夹上可移入该文件夹。点击图标可自定义图标。</p>
 			<p class="sort-gui-hint">拖拽到上方空白处：插入上方 | 拖拽到下方空白处：插入下方 | 拖拽到文件夹中心：移入文件夹</p>
 		`;
 
@@ -72,14 +72,6 @@ export class SortGuiView extends ItemView {
 		// Right button group
 		const rightGroup = buttonsContainer.createDiv('button-group');
 
-		// Reset button
-		const resetBtn = new ButtonComponent(rightGroup);
-		resetBtn.setIcon('undo');
-		resetBtn.setButtonText('恢复默认');
-		resetBtn.onClick(async () => {
-			await this.resetSort();
-		});
-
 		// Apply button
 		const applyBtn = new ButtonComponent(rightGroup);
 		applyBtn.setIcon('check');
@@ -110,7 +102,6 @@ export class SortGuiView extends ItemView {
 
 	/**
 	 * "应用排序"：将 sortspec 中的排序应用到 Obsidian 内置文件列表
-	 * 注意：拖拽排序后已经更新了 sortspec，这里只需刷新 Obsidian
 	 */
 	private async applySort(): Promise<void> {
 		try {
@@ -149,37 +140,6 @@ export class SortGuiView extends ItemView {
 				view.requestSort();
 			}
 		});
-	}
-
-	private async resetSort(): Promise<void> {
-		try {
-			if (this.sortSpecFilePath) {
-				const file = this.app.vault.getAbstractFileByPath(this.sortSpecFilePath);
-				if (file instanceof TFile) {
-					await this.app.vault.delete(file);
-					new Notice('已恢复默认排序');
-				}
-			}
-			this.sortSpecFilePath = null;
-
-			// 等待文件系统同步
-			await new Promise(resolve => setTimeout(resolve, 100));
-
-			// 禁用自定义排序
-			if (this.pluginRef && typeof this.pluginRef.switchPluginStateTo === 'function') {
-				this.pluginRef.switchPluginStateTo(false);
-			}
-
-			// 刷新文件浏览器
-			this.refreshFileExplorer();
-
-			// 重新加载树
-			this.dragDropTree?.setSortSpecFile(null);
-			await this.dragDropTree?.reload();
-		} catch (error) {
-			console.error('Failed to reset:', error);
-			new Notice('重置失败：' + (error as Error).message);
-		}
 	}
 
 	/**
