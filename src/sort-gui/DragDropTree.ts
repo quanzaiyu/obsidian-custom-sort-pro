@@ -1,4 +1,5 @@
 import { App, TFolder, Notice, TFile, Menu } from 'obsidian';
+import { IconPickerModal } from './IconPickerModal';
 
 export interface TreeNode {
 	id: string;
@@ -10,6 +11,7 @@ export interface TreeNode {
 	expanded?: boolean;
 	loaded?: boolean;
 	sortOrder?: number;
+	customIcon?: string;  // 自定义图标（emoji 或图标文件路径）
 }
 
 export class DragDropTree {
@@ -276,7 +278,13 @@ export class DragDropTree {
 
 		// Icon
 		const iconEl = itemEl.createDiv('sort-gui-item-icon');
-		iconEl.textContent = node.type === 'folder' ? (node.expanded ? '📂' : '📁') : '📄';
+		this.renderNodeIcon(iconEl, node);
+
+		// Click on icon to open icon picker
+		iconEl.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.openIconPicker(node, iconEl);
+		});
 
 		// Name
 		const nameEl = itemEl.createDiv('sort-gui-item-name');
@@ -923,5 +931,101 @@ export class DragDropTree {
 	cleanup(): void {
 		this.tree = [];
 		this.clearDropIndicators();
+	}
+
+	/**
+	 * Render the icon for a node (emoji or custom icon)
+	 */
+	private renderNodeIcon(iconEl: HTMLElement, node: TreeNode): void {
+		iconEl.empty();
+
+		if (node.customIcon) {
+			// Check if it's an image file
+			if (/\.(svg|png|jpg|jpeg|webp|gif)$/i.test(node.customIcon)) {
+				let imgSrc = node.customIcon;
+				// If it's a vault file path, get the proper resource path
+				const file = this.app.vault.getAbstractFileByPath(node.customIcon);
+				if (file instanceof TFile) {
+					imgSrc = this.app.vault.getResourcePath(file);
+				}
+				iconEl.createEl('img', {
+					attr: {
+						src: imgSrc,
+						alt: node.name
+					},
+					cls: 'sort-gui-item-icon-img'
+				});
+			} else {
+				// It's an emoji
+				iconEl.textContent = node.customIcon;
+			}
+		} else {
+			// Default icons
+			if (node.type === 'folder') {
+				iconEl.textContent = node.expanded ? '📂' : '📁';
+			} else {
+				iconEl.textContent = '📄';
+			}
+		}
+	}
+
+	/**
+	 * Open the icon picker modal
+	 */
+	private openIconPicker(node: TreeNode, iconEl: HTMLElement): void {
+		const modal = new IconPickerModal(this.app, {
+			onSelect: (icon: string) => {
+				node.customIcon = icon;
+				this.renderNodeIcon(iconEl, node);
+				this.saveCustomIcon(node);
+			},
+			onClear: () => {
+				node.customIcon = undefined;
+				this.renderNodeIcon(iconEl, node);
+				this.saveCustomIcon(node);
+			}
+		});
+		modal.open();
+	}
+
+	/**
+	 * Save custom icon to sortspec
+	 */
+	private async saveCustomIcon(node: TreeNode): Promise<void> {
+		const folderPath = this.getParentPath(node.path);
+		const sortspecPath = folderPath === '/' ? '/sortspec.md' : `${folderPath}/sortspec.md`;
+		const file = this.app.vault.getAbstractFileByPath(sortspecPath);
+
+		if (!(file instanceof TFile)) return;
+
+		try {
+			const content = await this.app.vault.read(file);
+			const lines = content.split('\n');
+			const nameForSort = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
+
+			// Find and update the line for this node
+			const newLines: string[] = [];
+			for (const line of lines) {
+				const trimmed = line.trim();
+				// Skip icon metadata lines
+				if (trimmed.startsWith(':icon ')) {
+					continue;
+				}
+				// Check if this line contains the node name
+				if (trimmed === nameForSort || trimmed.endsWith(' ' + nameForSort)) {
+					newLines.push(line);
+					// Add icon line after this
+					if (node.customIcon) {
+						newLines.push(`    :icon ${node.customIcon} ${nameForSort}`);
+					}
+				} else {
+					newLines.push(line);
+				}
+			}
+
+			await this.app.vault.modify(file, newLines.join('\n'));
+		} catch (error) {
+			console.error('保存自定义图标失败:', error);
+		}
 	}
 }

@@ -37,7 +37,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd D:/Projects/obsidian-custom-sort && sed -i '73s/read(file)/read(file as TFile)/' src/sort-gui/DragDropTree.ts && pnpm build 2>&1",
+    "buildCommand": "cd \"D:/Projects/obsidian-custom-sort\" && pnpm build 2>&1",
     "testCommand": "pnpm test",
     "lintCommand": null,
     "devCommand": "pnpm dev",
@@ -138,14 +138,20 @@
   "hotPaths": [
     {
       "path": "src\\sort-gui\\DragDropTree.ts",
-      "accessCount": 175,
-      "lastAccessed": 1779891831833,
+      "accessCount": 190,
+      "lastAccessed": 1779893438260,
       "type": "file"
     },
     {
       "path": "src\\sort-gui\\SortGuiView.ts",
-      "accessCount": 34,
-      "lastAccessed": 1779814197226,
+      "accessCount": 35,
+      "lastAccessed": 1779893341751,
+      "type": "file"
+    },
+    {
+      "path": "src\\sort-gui\\IconPickerModal.ts",
+      "accessCount": 26,
+      "lastAccessed": 1779894724811,
       "type": "file"
     },
     {
@@ -161,16 +167,16 @@
       "type": "file"
     },
     {
+      "path": "src\\sort-gui\\styles.css",
+      "accessCount": 11,
+      "lastAccessed": 1779894632285,
+      "type": "file"
+    },
+    {
       "path": "src",
       "accessCount": 9,
       "lastAccessed": 1779891723543,
       "type": "directory"
-    },
-    {
-      "path": "src\\sort-gui\\styles.css",
-      "accessCount": 5,
-      "lastAccessed": 1779803145134,
-      "type": "file"
     },
     {
       "path": "docs\\advanced-README.md",
@@ -179,16 +185,22 @@
       "type": "file"
     },
     {
+      "path": "",
+      "accessCount": 3,
+      "lastAccessed": 1779892676945,
+      "type": "directory"
+    },
+    {
+      "path": "src\\custom-sort\\icons.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779893331137,
+      "type": "file"
+    },
+    {
       "path": "src\\sort-gui\\SortGuiModal.ts",
       "accessCount": 1,
       "lastAccessed": 1779800129655,
       "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 1,
-      "lastAccessed": 1779802104412,
-      "type": "directory"
     },
     {
       "path": "src\\sort-gui",
@@ -212,6 +224,12 @@
       "path": "README_zh.md",
       "accessCount": 1,
       "lastAccessed": 1779816028881,
+      "type": "file"
+    },
+    {
+      "path": "styles.css",
+      "accessCount": 1,
+      "lastAccessed": 1779893337071,
       "type": "file"
     }
   ],
