@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd \\\"D:/Projects/obsidian-custom-sort\\\" && pnpm build 2>&1\",\"timeout\":60000,\"description\":\"Build project to verify changes\"}",
-  "error": "Exit code 126\n\n> obsidian-custom-sort@3.1.6 build D:\\Projects\\obsidian-custom-sort\n> tsc -noEmit -skipLibCheck && node esbuild.config.mjs production\n\nsrc/sort-gui/DragDropTree.ts(656,4): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.\r\nsrc/sort-gui/DragDropTree.ts(1120,19): error TS2554: Expected 2 arguments, but got 1.\r\n ELIFECYCLE  Command failed with exit code 2.",
-  "timestamp": "2026-05-27T16:29:46.899Z",
-  "retry_count": 2
+  "tool_input_preview": "{\"command\":\"cd \\\"D:/Projects/obsidian-custom-sort\\\" && npm run build 2>&1\",\"description\":\"测试构建\"}",
+  "error": "Exit code 1\n\n> obsidian-custom-sort@3.1.7 build\n> node esbuild.config.mjs production\n\nBuilding: src/main.ts -> dist/main.js\n✘ [ERROR] Could not resolve \"monkey-around\"\n\n    src/main.ts:19:21:\n      19 │ import {around} from 'monkey-around';\n         ╵                      ~~~~~~~~~~~~~~~\n\n  You can mark the path \"monkey-around\" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.\n\n1 error\nD:\\Projects\\obsidian-custom-sort\\node_module...",
+  "timestamp": "2026-05-28T13:09:43.780Z",
+  "retry_count": 3
 }

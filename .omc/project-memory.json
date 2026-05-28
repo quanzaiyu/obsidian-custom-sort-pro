@@ -37,7 +37,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd \"D:/Projects/obsidian-custom-sort\" && pnpm build 2>&1",
+    "buildCommand": "cd \"D:/Projects/obsidian-custom-sort\" && npm run build:v2 2>&1",
     "testCommand": "pnpm test",
     "lintCommand": null,
     "devCommand": "pnpm dev",
@@ -138,26 +138,32 @@
   "hotPaths": [
     {
       "path": "src\\sort-gui\\DragDropTree.ts",
-      "accessCount": 260,
-      "lastAccessed": 1779899424888,
+      "accessCount": 262,
+      "lastAccessed": 1779972879395,
       "type": "file"
     },
     {
       "path": "src\\sort-gui\\SortGuiView.ts",
-      "accessCount": 39,
-      "lastAccessed": 1779897561771,
+      "accessCount": 41,
+      "lastAccessed": 1779972879253,
       "type": "file"
     },
     {
       "path": "src\\sort-gui\\IconPickerModal.ts",
-      "accessCount": 26,
-      "lastAccessed": 1779894724811,
+      "accessCount": 28,
+      "lastAccessed": 1779972891967,
       "type": "file"
     },
     {
       "path": "src\\main.ts",
-      "accessCount": 21,
-      "lastAccessed": 1779891714242,
+      "accessCount": 24,
+      "lastAccessed": 1779976355134,
+      "type": "file"
+    },
+    {
+      "path": "src\\sort-gui\\styles.css",
+      "accessCount": 13,
+      "lastAccessed": 1779972892024,
       "type": "file"
     },
     {
@@ -167,16 +173,46 @@
       "type": "file"
     },
     {
-      "path": "src\\sort-gui\\styles.css",
+      "path": "src",
       "accessCount": 11,
-      "lastAccessed": 1779894632285,
+      "lastAccessed": 1779972467522,
+      "type": "directory"
+    },
+    {
+      "path": "src-v2\\IconPickerModal.ts",
+      "accessCount": 7,
+      "lastAccessed": 1779973301414,
       "type": "file"
     },
     {
-      "path": "src",
-      "accessCount": 10,
-      "lastAccessed": 1779896221575,
+      "path": "src-v2\\DragDropTree.ts",
+      "accessCount": 7,
+      "lastAccessed": 1779977227052,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 6,
+      "lastAccessed": 1779972892228,
       "type": "directory"
+    },
+    {
+      "path": "src-v2\\main.ts",
+      "accessCount": 5,
+      "lastAccessed": 1779977241692,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.json",
+      "accessCount": 4,
+      "lastAccessed": 1779973752264,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 4,
+      "lastAccessed": 1779973752775,
+      "type": "file"
     },
     {
       "path": "docs\\advanced-README.md",
@@ -185,15 +221,27 @@
       "type": "file"
     },
     {
-      "path": "",
+      "path": "src-v2\\SortSpecManager.ts",
       "accessCount": 3,
-      "lastAccessed": 1779892676945,
-      "type": "directory"
+      "lastAccessed": 1779977204340,
+      "type": "file"
+    },
+    {
+      "path": "manifest.json",
+      "accessCount": 3,
+      "lastAccessed": 1779977260493,
+      "type": "file"
     },
     {
       "path": "src\\custom-sort\\icons.ts",
       "accessCount": 2,
       "lastAccessed": 1779893331137,
+      "type": "file"
+    },
+    {
+      "path": "src-v2\\MySortView.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779976848934,
       "type": "file"
     },
     {
@@ -233,9 +281,45 @@
       "type": "file"
     },
     {
-      "path": "package.json",
+      "path": "src\\custom-sort",
       "accessCount": 1,
-      "lastAccessed": 1779896211467,
+      "lastAccessed": 1779972495584,
+      "type": "directory"
+    },
+    {
+      "path": "src-v2\\types.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779972964888,
+      "type": "file"
+    },
+    {
+      "path": "src-v2\\RecentIconsManager.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779972966574,
+      "type": "file"
+    },
+    {
+      "path": "src-v2\\styles.css",
+      "accessCount": 1,
+      "lastAccessed": 1779973131784,
+      "type": "file"
+    },
+    {
+      "path": "docs\\examples\\basic\\sortspec.md",
+      "accessCount": 1,
+      "lastAccessed": 1779976884229,
+      "type": "file"
+    },
+    {
+      "path": "docs\\examples\\1\\sortspec.md",
+      "accessCount": 1,
+      "lastAccessed": 1779976898993,
+      "type": "file"
+    },
+    {
+      "path": "docs\\examples\\quickstart\\sortspec.md",
+      "accessCount": 1,
+      "lastAccessed": 1779976899020,
       "type": "file"
     }
   ],

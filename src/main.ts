@@ -360,7 +360,7 @@ export default class CustomSortPlugin
 
 		// Add drag & drop sort GUI ribbon icon (only on desktop)
 		if (Platform.isDesktop) {
-			this.addRibbonIcon('list-ordered', 'Open Drag & Drop Sort', () => {
+			this.ribbonIconEl = this.addRibbonIcon('list-ordered', 'Open Drag & Drop Sort', () => {
 				// Try to find existing SortGuiView or create new one
 				const existingLeaf = this.app.workspace.getLeavesOfType(SORT_GUI_VIEW_TYPE).first();
 				if (existingLeaf) {
