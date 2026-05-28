@@ -1,4 +1,4 @@
-import { App, TFile, Notice, parseYaml } from 'obsidian';
+import { App, TFile, TFolder, Notice, parseYaml } from 'obsidian';
 import type { SortSpec } from './types';
 
 export class SortSpecManager {
@@ -9,11 +9,33 @@ export class SortSpecManager {
 	}
 
 	private getSortSpecPath(folderPath: string): string {
-		return folderPath === '/' || folderPath === '' ? '/sortspec.md' : `${folderPath}/sortspec.md`;
+		// 处理根目录
+		if (folderPath === '/' || folderPath === '' || folderPath === '//') {
+			return 'sortspec.md';
+		}
+
+		// 清理路径：去掉开头的 /
+		let normalized = folderPath;
+		while (normalized.startsWith('/')) {
+			normalized = normalized.substring(1);
+		}
+
+		// 不以 / 开头
+		if (!normalized) {
+			return 'sortspec.md';
+		}
+
+		return `${normalized}/sortspec.md`;
 	}
 
 	async load(folderPath: string): Promise<SortSpec | null> {
-		const sortspecPath = this.getSortSpecPath(folderPath);
+		// 规范化路径 - 去掉开头的 /
+		let path = folderPath;
+		while (path.startsWith('/')) {
+			path = path.substring(1);
+		}
+
+		const sortspecPath = this.getSortSpecPath(path);
 		const file = this.app.vault.getAbstractFileByPath(sortspecPath);
 
 		if (!(file instanceof TFile)) {
@@ -28,14 +50,21 @@ export class SortSpecManager {
 				return null;
 			}
 
-			// 使用 Obsidian 的 parseYaml 解析 frontmatter
 			const frontmatter = parseYaml(frontmatterMatch[1]);
-			const sortingSpec = Array.isArray(frontmatter?.['sorting-spec'])
-				? frontmatter['sorting-spec'].filter((item: any) => typeof item === 'string')
-				: [];
-			const customIcons = typeof frontmatter?.['custom-icons'] === 'object'
-				? frontmatter['custom-icons']
-				: {};
+
+			// 解析 sorting-spec
+			let sortingSpec: string[] = [];
+			const specRaw = frontmatter?.['sorting-spec'];
+			if (Array.isArray(specRaw)) {
+				sortingSpec = specRaw.filter((item: any) => typeof item === 'string');
+			}
+
+			// 解析 custom-icons
+			let customIcons: Record<string, string> = {};
+			const iconsRaw = frontmatter?.['custom-icons'];
+			if (iconsRaw && typeof iconsRaw === 'object' && !Array.isArray(iconsRaw)) {
+				customIcons = iconsRaw as Record<string, string>;
+			}
 
 			return { sortingSpec, customIcons };
 		} catch (error) {
@@ -45,27 +74,45 @@ export class SortSpecManager {
 	}
 
 	async save(folderPath: string, sortingSpec: string[], customIcons: Record<string, string>): Promise<void> {
-		const sortspecPath = this.getSortSpecPath(folderPath);
-		let file = this.app.vault.getAbstractFileByPath(sortspecPath);
-
-		if (!(file instanceof TFile)) {
-			await this.createIfNotExists(folderPath);
-			file = this.app.vault.getAbstractFileByPath(sortspecPath);
+		// 规范化路径 - 去掉开头的 /
+		let path = folderPath;
+		while (path.startsWith('/')) {
+			path = path.substring(1);
 		}
 
-		if (!(file instanceof TFile)) {
-			new Notice('无法创建sortspec.md');
+		const sortspecPath = this.getSortSpecPath(path);
+		let file = this.app.vault.getAbstractFileByPath(sortspecPath);
+
+		// 如果文件已存在，直接更新
+		if (file instanceof TFile) {
+			await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+				frontmatter['sorting-spec'] = sortingSpec;
+				if (Object.keys(customIcons).length > 0) {
+					frontmatter['custom-icons'] = customIcons;
+				} else {
+					delete frontmatter['custom-icons'];
+				}
+			});
 			return;
 		}
 
-		await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-			frontmatter['sorting-spec'] = sortingSpec;
-			if (Object.keys(customIcons).length > 0) {
-				frontmatter['custom-icons'] = customIcons;
-			} else {
-				delete frontmatter['custom-icons'];
+		// 如果文件不存在，创建它
+		try {
+			const initialContent = `---\nsorting-spec:\n  - ${sortingSpec.join('\n  - ')}\n---\n`;
+			await this.app.vault.create(sortspecPath, initialContent);
+			file = this.app.vault.getAbstractFileByPath(sortspecPath);
+			if (file instanceof TFile) {
+				await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+					frontmatter['sorting-spec'] = sortingSpec;
+					if (Object.keys(customIcons).length > 0) {
+						frontmatter['custom-icons'] = customIcons;
+					}
+				});
 			}
-		});
+		} catch (error) {
+			console.error('创建sortspec失败:', error);
+			new Notice('无法创建sortspec.md: ' + (error as Error).message);
+		}
 	}
 
 	async createIfNotExists(folderPath: string): Promise<void> {
@@ -123,5 +170,14 @@ export class SortSpecManager {
 	async updateSortingSpec(folderPath: string, items: string[]): Promise<void> {
 		const spec = await this.load(folderPath);
 		await this.save(folderPath, items, spec?.customIcons || {});
+	}
+
+	clearCache(): void {
+		// 不再使用缓存，每次都重新读取
+	}
+
+	getAbsolutePath(path: string): string {
+		const adapter = this.app.vault.adapter;
+		return adapter.getFullPath(path);
 	}
 }

@@ -1,5 +1,5 @@
-import { App, TFile, TFolder, Notice, Menu, parseYaml } from 'obsidian';
-import type { TreeNode, FileItem } from './types';
+import { App, TFile, TFolder, Notice, Menu, setIcon } from 'obsidian';
+import type { TreeNode } from './types';
 import { SortSpecManager } from './SortSpecManager';
 import { IconPickerModal } from './IconPickerModal';
 
@@ -15,6 +15,7 @@ export class DragDropTree {
 	private dragNode: TreeNode | null = null;
 	private dropMode: 'before' | 'after' | 'folder' | null = null;
 	private onIconChange?: (node: TreeNode, icon: string | undefined) => void;
+	private initialized: boolean = false;
 
 	constructor(app: App, container: HTMLElement, onIconChange?: (node: TreeNode, icon: string | undefined) => void) {
 		this.app = app;
@@ -27,12 +28,23 @@ export class DragDropTree {
 		await this.buildTree();
 		this.render();
 		this.registerVaultListener();
+		this.initialized = true;
 	}
 
 	private registerVaultListener(): void {
-		this.app.vault.on('delete', () => this.reload());
-		this.app.vault.on('create', () => this.reload());
-		this.app.vault.on('rename', () => this.reload());
+		const plugin = this;
+		this.app.vault.on('delete', () => {
+			this.sortSpecManager.clearCache();
+			this.reload();
+		});
+		this.app.vault.on('create', () => {
+			this.sortSpecManager.clearCache();
+			this.reload();
+		});
+		this.app.vault.on('rename', () => {
+			this.sortSpecManager.clearCache();
+			this.reload();
+		});
 	}
 
 	async reload(): Promise<void> {
@@ -45,36 +57,57 @@ export class DragDropTree {
 		this.sortOrdersByFolder.clear();
 		this.customIconsByFolder.clear();
 
+		// 加载根目录的 sortspec
 		await this.loadFolderSortSpec(root);
+
+		// 递归加载所有展开的文件夹的 sortspec
+		for (const expandedPath of this.expandedPaths) {
+			const folder = this.app.vault.getFolderByPath(expandedPath);
+			if (folder) {
+				await this.loadAllSubfolderSortSpecs(folder);
+			}
+		}
+
 		this.tree = this.buildNodesFromFolder(root);
 	}
 
-	private async loadFolderSortSpec(folder: TFolder): Promise<void> {
-		const spec = await this.sortSpecManager.load(folder.path);
+	private async loadAllSubfolderSortSpecs(folder: TFolder): Promise<void> {
+		await this.loadFolderSortSpec(folder);
 
-		if (spec) {
+		for (const child of folder.children) {
+			if (child instanceof TFolder) {
+				await this.loadAllSubfolderSortSpecs(child);
+			}
+		}
+	}
+
+	private async loadFolderSortSpec(folder: TFolder): Promise<void> {
+		const folderPath = folder.path;
+		const spec = await this.sortSpecManager.load(folderPath);
+
+		if (spec && spec.sortingSpec.length > 0) {
 			const sortMap = new Map<string, number>();
 			spec.sortingSpec.forEach((name, index) => {
 				sortMap.set(name, index);
 			});
-			this.sortOrdersByFolder.set(folder.path, sortMap);
-			this.customIconsByFolder.set(folder.path, spec.customIcons);
-		}
-
-		for (const child of folder.children) {
-			if (child instanceof TFolder) {
-				await this.loadFolderSortSpec(child);
-			}
+			this.sortOrdersByFolder.set(folderPath, sortMap);
+			this.customIconsByFolder.set(folderPath, spec.customIcons);
+		} else {
+			// 清除之前的缓存（如果有）
+			this.sortOrdersByFolder.delete(folderPath);
+			this.customIconsByFolder.delete(folderPath);
 		}
 	}
 
 	private buildNodesFromFolder(folder: TFolder): TreeNode[] {
 		const nodes: TreeNode[] = [];
-		const sortMap = this.sortOrdersByFolder.get(folder.path);
+		const sortMap = this.sortOrdersByFolder.get(folder.path) || new Map<string, number>();
+		const icons = this.customIconsByFolder.get(folder.path) || {};
 
 		for (const child of folder.children) {
 			const nameWithoutExt = child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name;
 
+			// 跳过文件夹笔记（同名 .md 文件）
 			if (this.isFolderNote(child.name, folder)) {
 				continue;
 			}
@@ -88,11 +121,10 @@ export class DragDropTree {
 				hasChildren: child instanceof TFolder && child.children.length > 0,
 				expanded: this.expandedPaths.has(child.path),
 				loaded: false,
-				sortOrder: sortMap?.get(nameWithoutExt)
+				sortOrder: sortMap.get(nameWithoutExt)
 			};
 
-			const icons = this.customIconsByFolder.get(folder.path);
-			if (icons && icons[nameWithoutExt]) {
+			if (icons[nameWithoutExt]) {
 				node.customIcon = icons[nameWithoutExt];
 			}
 
@@ -100,11 +132,14 @@ export class DragDropTree {
 		}
 
 		nodes.sort((a, b) => {
+			// 按 sortOrder 排序
 			if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
 				return a.sortOrder - b.sortOrder;
 			}
+			// 有 sortOrder 的排前面
 			if (a.sortOrder !== undefined) return -1;
 			if (b.sortOrder !== undefined) return 1;
+			// 按字母顺序
 			return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
 		});
 
@@ -112,12 +147,7 @@ export class DragDropTree {
 	}
 
 	private isFolderNote(fileName: string, folder: TFolder): boolean {
-		// 只有当文件名与文件夹名相同时才隐藏（即 folderNote.md）
 		const folderName = folder.path === '/' ? '' : folder.name;
-		return fileName === `${folderName}.md`;
-	}
-
-	private isFolderNoteMd(fileName: string, folderName: string): boolean {
 		return fileName === `${folderName}.md`;
 	}
 
@@ -132,6 +162,11 @@ export class DragDropTree {
 			if (this.dragId) {
 				e.dataTransfer!.dropEffect = 'move';
 			}
+		});
+
+		treeEl.addEventListener('drop', (e) => {
+			e.preventDefault();
+			this.clearDropIndicators();
 		});
 
 		this.renderNodes(this.tree, treeEl);
@@ -159,7 +194,13 @@ export class DragDropTree {
 		const folder = this.app.vault.getFolderByPath(node.path);
 		if (!folder) return;
 
+		// 加载当前文件夹的 sortspec
 		await this.loadFolderSortSpec(folder);
+
+		// 递归加载所有子文件夹的 sortspec
+		await this.loadAllSubfolderSortSpecs(folder);
+
+		// 构建节点
 		node.children = this.buildNodesFromFolder(folder);
 		node.loaded = true;
 
@@ -196,7 +237,6 @@ export class DragDropTree {
 		itemEl.dataset.type = node.type;
 
 		itemEl.addEventListener('click', (e) => this.handleItemClick(e, node));
-
 		itemEl.addEventListener('contextmenu', (e) => this.showContextMenu(e, node));
 
 		itemEl.addEventListener('dragstart', (e) => this.handleDragStart(e, node));
@@ -258,7 +298,7 @@ export class DragDropTree {
 			if (/\.(svg|png|jpg|jpeg|webp|gif)$/i.test(node.customIcon)) {
 				const file = this.app.vault.getAbstractFileByPath(node.customIcon);
 				if (file instanceof TFile) {
-					const img = iconEl.createEl('img', {
+					iconEl.createEl('img', {
 						attr: { src: this.app.vault.getResourcePath(file), alt: node.name },
 						cls: 'sort-gui-item-icon-img'
 					});
@@ -370,7 +410,8 @@ export class DragDropTree {
 
 		menu.addItem(item => {
 			item.setTitle('复制绝对路径').setIcon('file').onClick(() => {
-				navigator.clipboard.writeText(node.path);
+				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
+				navigator.clipboard.writeText(absPath);
 			});
 		});
 
@@ -410,8 +451,8 @@ export class DragDropTree {
 
 		menu.addItem(item => {
 			item.setTitle('在系统资源管理器中显示').setIcon('folder').onClick(() => {
-				const path = (this.app as any).vault.adapter.getFullPath(node.path);
-				require('electron').shell.showItemInFolder(path);
+				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
+				require('electron').shell.showItemInFolder(absPath);
 			});
 		});
 
@@ -443,7 +484,8 @@ export class DragDropTree {
 
 		menu.addItem(item => {
 			item.setTitle('复制绝对路径').setIcon('file').onClick(() => {
-				navigator.clipboard.writeText(node.path);
+				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
+				navigator.clipboard.writeText(absPath);
 			});
 		});
 
@@ -475,8 +517,8 @@ export class DragDropTree {
 
 		menu.addItem(item => {
 			item.setTitle('在系统资源管理器中显示').setIcon('folder').onClick(() => {
-				const path = (this.app as any).vault.adapter.getFullPath(node.path);
-				require('electron').shell.showItemInFolder(path);
+				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
+				require('electron').shell.showItemInFolder(absPath);
 			});
 		});
 
@@ -569,7 +611,7 @@ export class DragDropTree {
 
 	private getParentPath(path: string): string {
 		const lastSlash = path.lastIndexOf('/');
-		return lastSlash === -1 ? '/' : path.substring(0, lastSlash);
+		return lastSlash <= 0 ? '/' : path.substring(0, lastSlash);
 	}
 
 	private async moveIntoFolder(dragNode: TreeNode, targetFolder: TreeNode): Promise<void> {
@@ -602,49 +644,44 @@ export class DragDropTree {
 		const folderPath = this.getParentPath(targetNode.path);
 		const folder = folderPath === '/' ? this.app.vault.getRoot() : this.app.vault.getFolderByPath(folderPath);
 
-		if (!folder) return;
-
-		// 获取当前文件夹中所有实际的子项（用于初始化或更新排序）
-		const actualChildren: string[] = [];
-		for (const child of folder.children) {
-			const name = child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name;
-			actualChildren.push(name);
+		if (!folder) {
+			new Notice('文件夹未找到');
+			return;
 		}
 
 		let spec = await this.sortSpecManager.load(folderPath);
 
-		// 如果没有 sortspec 或排序为空，使用实际顺序初始化
+		// 如果没有 sortspec 或排序为空，用实际子项初始化
 		if (!spec || spec.sortingSpec.length === 0) {
-			const items = [...actualChildren];
-			await this.sortSpecManager.save(folderPath, items, {});
-			spec = { sortingSpec: items, customIcons: {} };
+			const actualChildren: string[] = [];
+			for (const child of folder.children) {
+				const name = child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name;
+				actualChildren.push(name);
+			}
+			await this.sortSpecManager.save(folderPath, actualChildren, {});
+			spec = { sortingSpec: actualChildren, customIcons: {} };
 		}
 
 		const items = [...spec.sortingSpec];
 		const dragName = dragNode.name.endsWith('.md') ? dragNode.name.slice(0, -3) : dragNode.name;
 		const targetName = targetNode.name.endsWith('.md') ? targetNode.name.slice(0, -3) : targetNode.name;
 
-		// 如果 dragName 不在列表中，先添加它
-		let dragIndex = items.indexOf(dragName);
-		if (dragIndex === -1) {
+		// 如果 dragName 不在列表中，添加它
+		if (!items.includes(dragName)) {
 			items.push(dragName);
-			dragIndex = items.length - 1;
 		}
-
-		// 如果 targetName 不在列表中，先添加它
-		let targetIndex = items.indexOf(targetName);
-		if (targetIndex === -1) {
+		// 如果 targetName 不在列表中，添加它
+		if (!items.includes(targetName)) {
 			items.push(targetName);
-			targetIndex = items.length - 1;
 		}
 
 		// 从当前位置移除 dragItem
+		const dragIndex = items.indexOf(dragName);
 		items.splice(dragIndex, 1);
 
-		// 重新计算 targetIndex（因为 items 已经改变）
-		targetIndex = items.indexOf(targetName);
+		// 重新计算 targetIndex
+		let targetIndex = items.indexOf(targetName);
 		if (targetIndex === -1) {
-			// 如果找不到，说明有问题，使用默认位置
 			items.push(dragName);
 			await this.sortSpecManager.save(folderPath, items, spec.customIcons);
 			await this.reload();
@@ -654,15 +691,10 @@ export class DragDropTree {
 		// 计算插入位置
 		let insertIndex = mode === 'after' ? targetIndex + 1 : targetIndex;
 
-		// 如果 drag 原本在 target 之后，插入位置需要调整
-		const originalTargetIndex = items.indexOf(targetName);
-		if (originalTargetIndex !== -1 && dragIndex < targetIndex) {
-			insertIndex = mode === 'after' ? targetIndex : targetIndex - 1;
-		}
-
 		items.splice(insertIndex, 0, dragName);
 
 		await this.sortSpecManager.save(folderPath, items, spec.customIcons);
+		new Notice(`已更新排序`);
 		await this.reload();
 	}
 

@@ -5,8 +5,6 @@ export default class CustomSortV2Plugin extends Plugin {
 	private ribbonIconEl: HTMLElement | null = null;
 
 	async onload(): Promise<void> {
-		console.log('Custom Sort V2 Plugin loaded');
-
 		this.registerView(MY_SORT_VIEW_TYPE, (leaf) => new MySortView(leaf));
 
 		// 添加 Ribbon 图标（仅桌面端）

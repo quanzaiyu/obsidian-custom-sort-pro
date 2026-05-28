@@ -161,6 +161,18 @@
       "type": "file"
     },
     {
+      "path": "src-v2\\DragDropTree.ts",
+      "accessCount": 19,
+      "lastAccessed": 1779979653553,
+      "type": "file"
+    },
+    {
+      "path": "src-v2\\SortSpecManager.ts",
+      "accessCount": 17,
+      "lastAccessed": 1779979688943,
+      "type": "file"
+    },
+    {
       "path": "src\\sort-gui\\styles.css",
       "accessCount": 13,
       "lastAccessed": 1779972892024,
@@ -185,12 +197,6 @@
       "type": "file"
     },
     {
-      "path": "src-v2\\DragDropTree.ts",
-      "accessCount": 7,
-      "lastAccessed": 1779977227052,
-      "type": "file"
-    },
-    {
       "path": "",
       "accessCount": 6,
       "lastAccessed": 1779972892228,
@@ -198,8 +204,8 @@
     },
     {
       "path": "src-v2\\main.ts",
-      "accessCount": 5,
-      "lastAccessed": 1779977241692,
+      "accessCount": 6,
+      "lastAccessed": 1779979699942,
       "type": "file"
     },
     {
@@ -218,12 +224,6 @@
       "path": "docs\\advanced-README.md",
       "accessCount": 3,
       "lastAccessed": 1779815993346,
-      "type": "file"
-    },
-    {
-      "path": "src-v2\\SortSpecManager.ts",
-      "accessCount": 3,
-      "lastAccessed": 1779977204340,
       "type": "file"
     },
     {
@@ -321,6 +321,12 @@
       "accessCount": 1,
       "lastAccessed": 1779976899020,
       "type": "file"
+    },
+    {
+      "path": "src-v2",
+      "accessCount": 1,
+      "lastAccessed": 1779979694350,
+      "type": "directory"
     }
   ],
   "userDirectives": []
