@@ -169,7 +169,74 @@ export class DragDropTree {
 			this.clearDropIndicators();
 		});
 
+		// 空白区域右键菜单
+		treeEl.addEventListener('contextmenu', (e) => {
+			const target = e.target as HTMLElement;
+			// 如果点击的是 tree item，交给 item 处理
+			if (target.closest('.sort-gui-tree-item')) return;
+			e.preventDefault();
+
+			// 显示根目录的文件夹菜单
+			const menu = new Menu();
+			this.addRootFolderMenuItems(menu);
+			menu.showAtPosition({ x: e.clientX, y: e.clientY });
+		});
+
 		this.renderNodes(this.tree, treeEl);
+	}
+
+	private addRootFolderMenuItems(menu: Menu): void {
+		menu.addItem(item => {
+			item.setTitle('新建笔记').setIcon('file-plus').onClick(async () => {
+				const name = prompt('输入笔记名称:');
+				if (name) {
+					await this.app.vault.create(`${name}.md`, '');
+				}
+			});
+		});
+
+		menu.addItem(item => {
+			item.setTitle('新建文件夹').setIcon('folder-plus').onClick(async () => {
+				const name = prompt('输入文件夹名称:');
+				if (name) {
+					await this.app.vault.createFolder(name);
+				}
+			});
+		});
+
+		menu.addItem(item => {
+			item.setTitle('新建白板').setIcon('layout-dashboard').onClick(async () => {
+				const name = prompt('输入白板名称:');
+				if (name) {
+					await this.app.vault.create(`${name}.canvas`, '{"nodes":[]}');
+				}
+			});
+		});
+
+		menu.addItem(item => {
+			item.setTitle('新建绘图文件').setIcon('pen-tool').onClick(async () => {
+				const name = prompt('输入绘图文件名称:');
+				if (name) {
+					await this.app.vault.create(`${name}.excalidraw.md`, '');
+				}
+			});
+		});
+
+		menu.addSeparator();
+
+		menu.addItem(item => {
+			item.setTitle('在系统资源管理器中显示').setIcon('folder').onClick(() => {
+				const rootPath = this.app.vault.getRoot().path;
+				const realPath = this.app.vault.adapter.getFullPath(rootPath);
+				require('electron').shell.showItemInFolder(realPath);
+			});
+		});
+
+		menu.addItem(item => {
+			item.setTitle('刷新').setIcon('refresh-cw').onClick(async () => {
+				await this.reload();
+			});
+		});
 	}
 
 	private renderNodes(nodes: TreeNode[], parentEl: HTMLElement): void {
@@ -360,11 +427,22 @@ export class DragDropTree {
 	}
 
 	private addFolderMenuItems(menu: Menu, node: TreeNode): void {
+		// 获取文件夹路径（根目录用空字符串）
+		const getFolderPath = (path: string): string => {
+			if (path === '/' || path === '' || path === '//') return '';
+			// 去掉开头的 /
+			let p = path;
+			while (p.startsWith('/')) p = p.substring(1);
+			return p;
+		};
+
+		const folderPath = getFolderPath(node.path);
+
 		menu.addItem(item => {
 			item.setTitle('新建笔记').setIcon('file-plus').onClick(async () => {
 				const name = prompt('输入笔记名称:');
 				if (name) {
-					const path = node.path === '/' ? `/${name}.md` : `${node.path}/${name}.md`;
+					const path = folderPath ? `${folderPath}/${name}.md` : `${name}.md`;
 					await this.app.vault.create(path, '');
 				}
 			});
@@ -374,7 +452,8 @@ export class DragDropTree {
 			item.setTitle('新建文件夹').setIcon('folder-plus').onClick(async () => {
 				const name = prompt('输入文件夹名称:');
 				if (name) {
-					await this.app.vault.createFolder(node.path === '/' ? `/${name}` : `${node.path}/${name}`);
+					const path = folderPath ? `${folderPath}/${name}` : `${name}`;
+					await this.app.vault.createFolder(path);
 				}
 			});
 		});
@@ -383,7 +462,7 @@ export class DragDropTree {
 			item.setTitle('新建白板').setIcon('layout-dashboard').onClick(async () => {
 				const name = prompt('输入白板名称:');
 				if (name) {
-					const path = node.path === '/' ? `/${name}.canvas` : `${node.path}/${name}.canvas`;
+					const path = folderPath ? `${folderPath}/${name}.canvas` : `${name}.canvas`;
 					await this.app.vault.create(path, '{"nodes":[]}');
 				}
 			});
@@ -442,17 +521,30 @@ export class DragDropTree {
 		menu.addSeparator();
 
 		menu.addItem(item => {
-			item.setTitle('在文件夹中查找').setIcon('search').onClick(() => {
-				this.app.workspace.getLeavesOfType('search').forEach(leaf => {
-					(this.app as any).commands.executeCommandById('search:open-search', node.path);
-				});
+			item.setTitle('在文件夹中查找').setIcon('search').onClick(async () => {
+				const folderPath = getFolderPath(node.path);
+				// 切换到搜索视图并执行搜索
+				const searchView = this.app.workspace.getLeavesOfType('search')[0];
+				if (searchView) {
+					this.app.workspace.revealLeaf(searchView);
+					const searchInput = searchView.containerEl.querySelector('.search-input');
+					if (searchInput instanceof HTMLInputElement) {
+						searchInput.value = `path:${folderPath}`;
+						searchInput.dispatchEvent(new Event('input'));
+					}
+				}
 			});
 		});
 
 		menu.addItem(item => {
 			item.setTitle('在系统资源管理器中显示').setIcon('folder').onClick(() => {
 				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
-				require('electron').shell.showItemInFolder(absPath);
+				// 使用 Obsidian 的 API 显示文件
+				const file = this.app.vault.getAbstractFileByPath(node.path);
+				if (file) {
+					const realPath = this.app.vault.adapter.getFullPath(file.path);
+					require('electron').shell.showItemInFolder(realPath);
+				}
 			});
 		});
 

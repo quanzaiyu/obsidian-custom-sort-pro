@@ -155,15 +155,15 @@
       "type": "file"
     },
     {
-      "path": "src\\main.ts",
-      "accessCount": 24,
-      "lastAccessed": 1779976355134,
+      "path": "src-v2\\DragDropTree.ts",
+      "accessCount": 26,
+      "lastAccessed": 1779980502360,
       "type": "file"
     },
     {
-      "path": "src-v2\\DragDropTree.ts",
-      "accessCount": 19,
-      "lastAccessed": 1779979653553,
+      "path": "src\\main.ts",
+      "accessCount": 24,
+      "lastAccessed": 1779976355134,
       "type": "file"
     },
     {
@@ -233,6 +233,12 @@
       "type": "file"
     },
     {
+      "path": "src-v2\\styles.css",
+      "accessCount": 3,
+      "lastAccessed": 1779980389397,
+      "type": "file"
+    },
+    {
       "path": "src\\custom-sort\\icons.ts",
       "accessCount": 2,
       "lastAccessed": 1779893331137,
@@ -296,12 +302,6 @@
       "path": "src-v2\\RecentIconsManager.ts",
       "accessCount": 1,
       "lastAccessed": 1779972966574,
-      "type": "file"
-    },
-    {
-      "path": "src-v2\\styles.css",
-      "accessCount": 1,
-      "lastAccessed": 1779973131784,
       "type": "file"
     },
     {
