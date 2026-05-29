@@ -32,7 +32,7 @@
     "runtime": "Node.js 20.0.0"
   },
   "build": {
-    "buildCommand": "npm run build",
+    "buildCommand": "npm run build 2>&1",
     "testCommand": "npm test",
     "lintCommand": null,
     "devCommand": "npm run dev",
@@ -100,14 +100,20 @@
   "hotPaths": [
     {
       "path": "src\\DragDropTree.ts",
-      "accessCount": 57,
-      "lastAccessed": 1780042268999,
+      "accessCount": 75,
+      "lastAccessed": 1780061744339,
       "type": "file"
     },
     {
       "path": "src\\IconPickerModal.ts",
       "accessCount": 26,
       "lastAccessed": 1780027372565,
+      "type": "file"
+    },
+    {
+      "path": "src\\InputModal.ts",
+      "accessCount": 5,
+      "lastAccessed": 1780060160514,
       "type": "file"
     },
     {
@@ -121,12 +127,6 @@
       "accessCount": 4,
       "lastAccessed": 1780040616956,
       "type": "directory"
-    },
-    {
-      "path": "src\\InputModal.ts",
-      "accessCount": 3,
-      "lastAccessed": 1780042551204,
-      "type": "file"
     },
     {
       "path": "src\\types.ts",

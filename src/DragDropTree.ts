@@ -212,9 +212,76 @@ export class DragDropTree {
 		});
 
 		menu.addItem(item => {
-			item.setTitle('新建绘图文件').setIcon('pen-tool').onClick(() => {
-				new InputModal(this.app, '新建绘图文件', '输入绘图文件名称', '', (name) => {
-					this.app.vault.create(`${name}.excalidraw.md`, '');
+			item.setTitle('新建绘图文件').setIcon('pen-tool').onClick(async () => {
+				new InputModal(this.app, '新建绘图文件', '输入绘图文件名称', '', async (name) => {
+					// const templatePath = 'templates/template.excalidraw.md';
+					// const templateFile = this.app.vault.getAbstractFileByPath(templatePath);
+					// if (templateFile instanceof TFile) {
+					// 	const content = await this.app.vault.read(templateFile);
+					// 	const newPath = `${name}.excalidraw.md`;
+					// 	await this.app.vault.create(newPath, content);
+					// }
+						const content = `
+---
+
+excalidraw-plugin: parsed
+tags: [excalidraw]
+
+---
+==⚠  Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠==
+
+
+# Text Elements
+%%
+# Drawing
+\`\`\`json
+{
+	"type": "excalidraw",
+	"version": 2,
+	"source": "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/tag/1.9.28",
+	"elements": [],
+	"appState": {
+		"theme": "light",
+		"viewBackgroundColor": "#ffffff",
+		"currentItemStrokeColor": "#1e1e1e",
+		"currentItemBackgroundColor": "transparent",
+		"currentItemFillStyle": "solid",
+		"currentItemStrokeWidth": 2,
+		"currentItemStrokeStyle": "solid",
+		"currentItemRoughness": 1,
+		"currentItemOpacity": 100,
+		"currentItemFontFamily": 1,
+		"currentItemFontSize": 20,
+		"currentItemTextAlign": "left",
+		"currentItemStartArrowhead": null,
+		"currentItemEndArrowhead": "arrow",
+		"scrollX": 373.5,
+		"scrollY": 475,
+		"zoom": {
+			"value": 1
+		},
+		"currentItemRoundness": "round",
+		"gridSize": null,
+		"gridColor": {
+			"Bold": "#C9C9C9FF",
+			"Regular": "#EDEDEDFF"
+		},
+		"currentStrokeOptions": null,
+		"previousGridSize": null,
+		"frameRendering": {
+			"enabled": true,
+			"clip": true,
+			"name": true,
+			"outline": true
+		}
+	},
+	"files": {}
+}
+\`\`\`
+%%
+						`
+						const newPath = `${name}.excalidraw.md`;
+						await this.app.vault.create(newPath, content);
 				});
 			});
 		});
@@ -480,10 +547,29 @@ export class DragDropTree {
 		});
 
 		menu.addItem(item => {
-			item.setTitle('新建绘图文件').setIcon('pen-tool').onClick(() => {
-				new InputModal(this.app, '新建绘图文件', '输入绘图文件名称', '', (name) => {
-					this.app.vault.create(folderPath ? `${folderPath}/${name}.excalidraw.md` : `${name}.excalidraw.md`, '');
+			item.setTitle('新建绘图文件').setIcon('pen-tool').onClick(async () => {
+				new InputModal(this.app, '新建绘图文件', '输入绘图文件名称', '', async (name) => {
+					const templatePath = 'templates/template.excalidraw.md';
+					const templateFile = this.app.vault.getAbstractFileByPath(templatePath);
+					if (templateFile instanceof TFile) {
+						const content = await this.app.vault.read(templateFile);
+						const newPath = folderPath ? `${folderPath}/${name}.excalidraw.md` : `${name}.excalidraw.md`;
+						await this.app.vault.create(newPath, content);
+					}
 				});
+			});
+		});
+
+		menu.addItem(item => {
+			item.setTitle('新建文件夹笔记').setIcon('file-text').onClick(async () => {
+				const noteName = node.name;
+				const notePath = folderPath ? `${folderPath}/${noteName}.md` : `${noteName}.md`;
+				const existing = this.app.vault.getAbstractFileByPath(notePath);
+				if (existing) {
+					new Notice(`"${noteName}.md" 已存在，创建失败`);
+				} else {
+					await this.app.vault.create(notePath, '');
+				}
 			});
 		});
 

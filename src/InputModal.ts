@@ -50,6 +50,10 @@ export class InputModal extends Modal {
 
 		// 自动聚焦
 		this.open();
-		input.focus();
+	}
+
+	onOpen() {
+		const inputEl = this.contentEl.querySelector('input');
+		inputEl?.focus();
 	}
 }
