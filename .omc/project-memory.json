@@ -99,15 +99,15 @@
   },
   "hotPaths": [
     {
-      "path": "src\\IconPickerModal.ts",
-      "accessCount": 26,
-      "lastAccessed": 1780027372565,
+      "path": "src\\DragDropTree.ts",
+      "accessCount": 42,
+      "lastAccessed": 1780029004452,
       "type": "file"
     },
     {
-      "path": "src\\DragDropTree.ts",
-      "accessCount": 12,
-      "lastAccessed": 1780024864927,
+      "path": "src\\IconPickerModal.ts",
+      "accessCount": 26,
+      "lastAccessed": 1780027372565,
       "type": "file"
     },
     {
@@ -115,6 +115,12 @@
       "accessCount": 4,
       "lastAccessed": 1780025661301,
       "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 3,
+      "lastAccessed": 1780028917203,
+      "type": "directory"
     },
     {
       "path": "src\\types.ts",
