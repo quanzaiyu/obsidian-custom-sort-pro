@@ -258,33 +258,43 @@ export class DragDropTree {
 			item.setTitle('打开 Obsidian 原生菜单').setIcon('more-horizontal').onClick(() => {
 				const { remote } = require('electron');
 				const template: Electron.MenuItemConstructorOptions[] = [
-					{ label: '新建笔记', click: async () => {
-						const name = prompt('输入笔记名称:');
-						if (name) await this.app.vault.create(`${name}.md`, '');
-					}},
-					{ label: '新建文件夹', click: async () => {
-						const name = prompt('输入文件夹名称:');
-						if (name) await this.app.vault.createFolder(name);
-					}},
-					{ label: '新建白板', click: async () => {
-						const name = prompt('输入白板名称:');
-						if (name) await this.app.vault.create(`${name}.canvas`, '{"nodes":[]}');
-					}},
-					{ type: 'separator' },
-					{ label: '在系统资源管理器中显示', click: () => {
-						const rootPath = this.app.vault.getRoot().path;
-						const realPath = this.app.vault.adapter.getFullPath(rootPath);
-						require('electron').shell.showItemInFolder(realPath);
-					}},
-					{ label: '在文件列表中显示', click: () => {
-						const explorer = this.app.workspace.getLeavesOfType('file-explorer')[0];
-						if (explorer) {
-							this.app.workspace.revealLeaf(explorer);
-							const view = explorer.view as any;
-							const rootFolder = this.app.vault.getRoot();
-							if (view?.revealInFolder) view.revealInFolder(rootFolder);
+					{
+						label: '新建笔记', click: async () => {
+							const name = prompt('输入笔记名称:');
+							if (name) await this.app.vault.create(`${name}.md`, '');
 						}
-					}},
+					},
+					{
+						label: '新建文件夹', click: async () => {
+							const name = prompt('输入文件夹名称:');
+							if (name) await this.app.vault.createFolder(name);
+						}
+					},
+					{
+						label: '新建白板', click: async () => {
+							const name = prompt('输入白板名称:');
+							if (name) await this.app.vault.create(`${name}.canvas`, '{"nodes":[]}');
+						}
+					},
+					{ type: 'separator' },
+					{
+						label: '在系统资源管理器中显示', click: () => {
+							const rootPath = this.app.vault.getRoot().path;
+							const realPath = this.app.vault.adapter.getFullPath(rootPath);
+							require('electron').shell.showItemInFolder(realPath);
+						}
+					},
+					{
+						label: '在文件列表中显示', click: () => {
+							const explorer = this.app.workspace.getLeavesOfType('file-explorer')[0];
+							if (explorer) {
+								this.app.workspace.revealLeaf(explorer);
+								const view = explorer.view as any;
+								const rootFolder = this.app.vault.getRoot();
+								if (view?.revealInFolder) view.revealInFolder(rootFolder);
+							}
+						}
+					},
 				];
 				const menu = remote.Menu.buildFromTemplate(template);
 				menu.popup({ window: remote.getCurrentWindow() });
@@ -495,74 +505,12 @@ export class DragDropTree {
 
 		const folderPath = getFolderPath(node.path);
 
-		menu.addItem(item => {
-			item.setTitle('新建笔记').setIcon('file-plus').onClick(async () => {
-				const name = prompt('输入笔记名称:');
-				if (name) {
-					const path = folderPath ? `${folderPath}/${name}.md` : `${name}.md`;
-					await this.app.vault.create(path, '');
-				}
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('新建文件夹').setIcon('folder-plus').onClick(async () => {
-				const name = prompt('输入文件夹名称:');
-				if (name) {
-					const path = folderPath ? `${folderPath}/${name}` : `${name}`;
-					await this.app.vault.createFolder(path);
-				}
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('新建白板').setIcon('layout-dashboard').onClick(async () => {
-				const name = prompt('输入白板名称:');
-				if (name) {
-					const path = folderPath ? `${folderPath}/${name}.canvas` : `${name}.canvas`;
-					await this.app.vault.create(path, '{"nodes":[]}');
-				}
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('新建绘图文件').setIcon('pen-tool').onClick(async () => {
-				const name = prompt('输入绘图文件名称:');
-				if (name) {
-					const path = node.path === '/' ? `/${name}.excalidraw.md` : `${node.path}/${name}.excalidraw.md`;
-					await this.app.vault.create(path, '');
-				}
-			});
-		});
-
 		menu.addSeparator();
 
 		menu.addItem(item => {
 			item.setTitle('复制').setIcon('copy').onClick(async () => {
 				const newName = `${node.name} (副本)`;
 				await this.app.vault.createFolder(node.path === '/' ? `/${newName}` : `${node.path}/${newName}`);
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('复制绝对路径').setIcon('file').onClick(() => {
-				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
-				navigator.clipboard.writeText(absPath);
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('复制相对路径').setIcon('file').onClick(() => {
-				navigator.clipboard.writeText(node.path);
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('重命名').setIcon('pencil').onClick(async () => {
-				const folder = this.app.vault.getFolderByPath(node.path);
-				if (folder) {
-					(this.app as any).fileManager.startRenameFile(folder);
-				}
 			});
 		});
 
@@ -628,48 +576,11 @@ export class DragDropTree {
 				});
 			});
 		});
-
-		menu.addSeparator();
-
-		menu.addItem(item => {
-			item.setTitle('打开 Obsidian 原生菜单').setIcon('more-horizontal').onClick(() => {
-				// 创建原生上下文菜单
-				const { remote } = require('electron');
-				const template: Electron.MenuItemConstructorOptions[] = [
-					{ label: '重命名', click: () => (this.app as any).fileManager.startRenameFile(this.app.vault.getFolderByPath(node.path)) },
-					{ type: 'separator' },
-					{ label: '复制', click: () => this.app.vault.createFolder(`${node.path} (副本)`) },
-					{ label: '删除', click: async () => {
-						const folder = this.app.vault.getFolderByPath(node.path);
-						if (folder && confirm(`确定要删除 "${node.name}" 及其所有内容吗?`)) {
-							await this.app.vault.delete(folder, true);
-						}
-					}},
-					{ type: 'separator' },
-					{ label: '在文件列表中显示', click: () => {
-						this.app.workspace.getLeavesOfType('file-explorer').forEach(leaf => {
-							const view = leaf.view as any;
-							if (view?.revealInFolder) {
-								const folder = this.app.vault.getFolderByPath(node.path);
-								if (folder) view.revealInFolder(folder);
-							}
-						});
-					}},
-					{ label: '在系统资源管理器中显示', click: () => {
-						const folder = this.app.vault.getFolderByPath(node.path);
-						if (folder) {
-							const realPath = this.app.vault.adapter.getFullPath(folder.path);
-							require('electron').shell.showItemInFolder(realPath);
-						}
-					}},
-				];
-				const menu = remote.Menu.buildFromTemplate(template);
-				menu.popup({ window: remote.getCurrentWindow() });
-			});
-		});
 	}
 
 	private addFileMenuItems(menu: Menu, node: TreeNode): void {
+		menu.addSeparator();
+
 		menu.addItem(item => {
 			item.setTitle('复制').setIcon('copy').onClick(async () => {
 				const file = this.app.vault.getAbstractFileByPath(node.path);
@@ -683,100 +594,11 @@ export class DragDropTree {
 		});
 
 		menu.addItem(item => {
-			item.setTitle('复制绝对路径').setIcon('file').onClick(() => {
-				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
-				navigator.clipboard.writeText(absPath);
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('复制相对路径').setIcon('file').onClick(() => {
-				navigator.clipboard.writeText(node.path);
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('重命名').setIcon('pencil').onClick(async () => {
-				const file = this.app.vault.getAbstractFileByPath(node.path);
-				if (file) {
-					(this.app as any).fileManager.startRenameFile(file);
-				}
-			});
-		});
-
-		menu.addItem(item => {
 			item.setTitle('删除').setIcon('trash').onClick(async () => {
 				const file = this.app.vault.getAbstractFileByPath(node.path);
 				if (file && confirm(`确定要删除 "${node.name}" 吗?`)) {
 					await this.app.vault.delete(file);
 				}
-			});
-		});
-
-		menu.addSeparator();
-
-		menu.addItem(item => {
-			item.setTitle('在系统资源管理器中显示').setIcon('folder').onClick(() => {
-				const absPath = this.sortSpecManager.getAbsolutePath(node.path);
-				require('electron').shell.showItemInFolder(absPath);
-			});
-		});
-
-		menu.addItem(item => {
-			item.setTitle('在文件列表中显示').setIcon('list').onClick(() => {
-				this.app.workspace.getLeavesOfType('file-explorer').forEach(leaf => {
-					const view = leaf.view as any;
-					if (view?.revealInFolder) {
-						const file = this.app.vault.getAbstractFileByPath(node.path);
-						if (file) view.revealInFolder(file);
-					}
-				});
-			});
-		});
-
-		menu.addSeparator();
-
-		menu.addItem(item => {
-			item.setTitle('打开 Obsidian 原生菜单').setIcon('more-horizontal').onClick(() => {
-				const { remote } = require('electron');
-				const template: Electron.MenuItemConstructorOptions[] = [
-					{ label: '重命名', click: () => (this.app as any).fileManager.startRenameFile(this.app.vault.getAbstractFileByPath(node.path)) },
-					{ type: 'separator' },
-					{ label: '复制', click: async () => {
-						const file = this.app.vault.getAbstractFileByPath(node.path);
-						if (file instanceof TFile) {
-							const ext = file.extension;
-							const base = file.basename;
-							const newPath = file.path.replace(file.name, `${base} (副本).${ext}`);
-							await this.app.vault.copy(file, newPath);
-						}
-					}},
-					{ label: '删除', click: async () => {
-						const file = this.app.vault.getAbstractFileByPath(node.path);
-						if (file && confirm(`确定要删除 "${node.name}" 吗?`)) {
-							await this.app.vault.delete(file);
-						}
-					}},
-					{ type: 'separator' },
-					{ label: '在文件列表中显示', click: () => {
-						this.app.workspace.getLeavesOfType('file-explorer').forEach(leaf => {
-							const view = leaf.view as any;
-							if (view?.revealInFolder) {
-								const file = this.app.vault.getAbstractFileByPath(node.path);
-								if (file) view.revealInFolder(file);
-							}
-						});
-					}},
-					{ label: '在系统资源管理器中显示', click: () => {
-						const file = this.app.vault.getAbstractFileByPath(node.path);
-						if (file) {
-							const realPath = this.app.vault.adapter.getFullPath(file.path);
-							require('electron').shell.showItemInFolder(realPath);
-						}
-					}},
-				];
-				const menu = remote.Menu.buildFromTemplate(template);
-				menu.popup({ window: remote.getCurrentWindow() });
 			});
 		});
 	}
