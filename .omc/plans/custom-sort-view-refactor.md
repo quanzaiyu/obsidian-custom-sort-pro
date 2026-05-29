@@ -2,7 +2,9 @@
 
 ## 需求概述
 
-完全重构现有项目，在 `src-v2/` 目录下实现新的自定义排序视图插件。
+完全重构现有项目，在 `src/` 目录下实现新的自定义排序视图插件。
+
+提示：Obsidian知识库目录位于"D:\projects\obsidian-ai-data"
 
 ## 核心需求
 
@@ -20,6 +22,33 @@ custom-icons:
   文件名1: 📄
 ```
 
+frontmatter格式示例如下：
+
+```md
+---
+sorting-spec:
+  - 收藏夹
+  - AI
+  - 开发笔记
+  - 软件使用
+  - 计算机
+  - 公司资料
+  - 学习笔记
+  - 日程管理笔记本
+  - raw
+  - sortspec
+custom-icons:
+  收藏夹: 🗃️
+  AI: icon/深度学习.svg
+  开发笔记: 🗃️
+  软件使用: 🗃️
+  计算机: 🗃️
+  公司资料: 🗃️
+  学习笔记: 🗃️
+  日程管理笔记本: 🗃️
+---
+```
+
 ### 3.2 拖拽排序
 - 文件夹与文件混排
 - 拖拽后**立即**更新 sortspec.md
@@ -33,7 +62,6 @@ custom-icons:
 - 仅显示目录树
 - 无顶部标题/描述
 - 无底部按钮
-- 样式复用现有 `.sort-gui-tree-*` 样式
 
 ### 3.5 上下文菜单
 
@@ -84,7 +112,7 @@ custom-icons:
 ## 项目结构
 
 ```
-src-v2/
+src/
 ├── main.ts                    # 插件入口
 ├── MySortView.ts              # 视图类
 ├── DragDropTree.ts             # 拖拽树实现

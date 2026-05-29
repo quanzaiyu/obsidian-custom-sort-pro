@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1779891208861,
-  "projectRoot": "d:\\Projects\\obsidian-custom-sort",
+  "lastScanned": 1780023778189,
+  "projectRoot": "D:\\projects\\my_project\\obsidian-custom-sort-pro",
   "techStack": {
     "languages": [
       {
         "name": "JavaScript/TypeScript",
-        "version": null,
+        "version": ">=20.0.0",
         "confidence": "high",
         "markers": [
           "package.json"
@@ -24,28 +24,25 @@
     "frameworks": [
       {
         "name": "esbuild",
-        "version": "0.25.5",
+        "version": "0.25.3",
         "category": "build"
-      },
-      {
-        "name": "jest",
-        "version": "29.7.0",
-        "category": "testing"
       }
     ],
-    "packageManager": "pnpm",
-    "runtime": null
+    "packageManager": "npm",
+    "runtime": "Node.js 20.0.0"
   },
   "build": {
-    "buildCommand": "cd \"D:/Projects/obsidian-custom-sort\" && npm run build:v2 2>&1",
-    "testCommand": "pnpm test",
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
     "lintCommand": null,
-    "devCommand": "pnpm dev",
+    "devCommand": "npm run dev",
     "scripts": {
       "dev": "node esbuild.config.mjs",
-      "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-      "version": "node version-bump.mjs && git add manifest.json versions.json",
-      "test": "jest"
+      "dev:v2": "node esbuild.config.mjs --entry=src/main.ts --out=dist/main.js",
+      "build": "node esbuild.config.mjs production",
+      "build:v2": "node esbuild.config.mjs production --entry=src-v2/main.ts --out=dist/main.js",
+      "typecheck": "tsc --noEmit --skipLibCheck",
+      "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
     }
   },
   "conventions": {
@@ -71,262 +68,65 @@
     "dist": {
       "path": "dist",
       "purpose": "Distribution/build output",
-      "fileCount": 0,
-      "lastAccessed": 1779891208818,
-      "keyFiles": []
+      "fileCount": 1,
+      "lastAccessed": 1780023778089,
+      "keyFiles": [
+        "main.js"
+      ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 4,
-      "lastAccessed": 1779891208819,
+      "fileCount": 1,
+      "lastAccessed": 1780023778093,
       "keyFiles": [
-        "advanced-README.md",
-        "manual.md",
-        "syntax-reference.md",
-        "wildcards.md"
+        "完整的Obsidian文件管理器.md"
       ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
-      "fileCount": 3,
-      "lastAccessed": 1779891208842,
+      "fileCount": 8,
+      "lastAccessed": 1780023778138,
       "keyFiles": [
-        "custom-sort-plugin.ts",
+        "DragDropTree.ts",
+        "IconPickerModal.ts",
         "main.ts",
-        "settings.ts"
-      ]
-    },
-    "docs\\examples": {
-      "path": "docs\\examples",
-      "purpose": "Example code",
-      "fileCount": 0,
-      "lastAccessed": 1779891208843,
-      "keyFiles": []
-    },
-    "src\\test": {
-      "path": "src\\test",
-      "purpose": "Test files",
-      "fileCount": 1,
-      "lastAccessed": 1779891208843,
-      "keyFiles": [
-        "mocks.ts"
-      ]
-    },
-    "src\\types": {
-      "path": "src\\types",
-      "purpose": "Type definitions",
-      "fileCount": 1,
-      "lastAccessed": 1779891208843,
-      "keyFiles": [
-        "types.d.ts"
-      ]
-    },
-    "src\\utils": {
-      "path": "src\\utils",
-      "purpose": "Utility functions",
-      "fileCount": 5,
-      "lastAccessed": 1779891208843,
-      "keyFiles": [
-        "Bookmarks Core Plugin integration design.md",
-        "BookmarksCorePluginSignature.ts",
-        "ObsidianIconFolderPluginSignature.ts"
+        "MySortView.ts",
+        "RecentIconsManager.ts"
       ]
     }
   },
   "hotPaths": [
     {
-      "path": "src\\sort-gui\\DragDropTree.ts",
-      "accessCount": 262,
-      "lastAccessed": 1779972879395,
-      "type": "file"
-    },
-    {
-      "path": "src\\sort-gui\\SortGuiView.ts",
-      "accessCount": 41,
-      "lastAccessed": 1779972879253,
-      "type": "file"
-    },
-    {
-      "path": "src\\sort-gui\\IconPickerModal.ts",
-      "accessCount": 28,
-      "lastAccessed": 1779972891967,
-      "type": "file"
-    },
-    {
-      "path": "src-v2\\DragDropTree.ts",
+      "path": "src\\IconPickerModal.ts",
       "accessCount": 26,
-      "lastAccessed": 1779980502360,
+      "lastAccessed": 1780027372565,
       "type": "file"
     },
     {
-      "path": "src\\main.ts",
-      "accessCount": 24,
-      "lastAccessed": 1779976355134,
+      "path": "src\\DragDropTree.ts",
+      "accessCount": 12,
+      "lastAccessed": 1780024864927,
       "type": "file"
     },
     {
-      "path": "src-v2\\SortSpecManager.ts",
-      "accessCount": 17,
-      "lastAccessed": 1779979688943,
-      "type": "file"
-    },
-    {
-      "path": "src\\sort-gui\\styles.css",
-      "accessCount": 13,
-      "lastAccessed": 1779972892024,
-      "type": "file"
-    },
-    {
-      "path": "src\\sort-gui\\SortSpecGenerator.ts",
-      "accessCount": 11,
-      "lastAccessed": 1779812366253,
-      "type": "file"
-    },
-    {
-      "path": "src",
-      "accessCount": 11,
-      "lastAccessed": 1779972467522,
-      "type": "directory"
-    },
-    {
-      "path": "src-v2\\IconPickerModal.ts",
-      "accessCount": 7,
-      "lastAccessed": 1779973301414,
-      "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 6,
-      "lastAccessed": 1779972892228,
-      "type": "directory"
-    },
-    {
-      "path": "src-v2\\main.ts",
-      "accessCount": 6,
-      "lastAccessed": 1779979699942,
-      "type": "file"
-    },
-    {
-      "path": "tsconfig.json",
+      "path": "src\\styles.css",
       "accessCount": 4,
-      "lastAccessed": 1779973752264,
+      "lastAccessed": 1780025661301,
       "type": "file"
     },
     {
-      "path": "package.json",
-      "accessCount": 4,
-      "lastAccessed": 1779973752775,
-      "type": "file"
-    },
-    {
-      "path": "docs\\advanced-README.md",
-      "accessCount": 3,
-      "lastAccessed": 1779815993346,
-      "type": "file"
-    },
-    {
-      "path": "manifest.json",
-      "accessCount": 3,
-      "lastAccessed": 1779977260493,
-      "type": "file"
-    },
-    {
-      "path": "src-v2\\styles.css",
-      "accessCount": 3,
-      "lastAccessed": 1779980389397,
-      "type": "file"
-    },
-    {
-      "path": "src\\custom-sort\\icons.ts",
+      "path": "src\\types.ts",
       "accessCount": 2,
-      "lastAccessed": 1779893331137,
+      "lastAccessed": 1780025626154,
       "type": "file"
     },
     {
-      "path": "src-v2\\MySortView.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779976848934,
+      "path": "src\\SortSpecManager.ts",
+      "accessCount": 1,
+      "lastAccessed": 1780023797182,
       "type": "file"
-    },
-    {
-      "path": "src\\sort-gui\\SortGuiModal.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779800129655,
-      "type": "file"
-    },
-    {
-      "path": "src\\sort-gui",
-      "accessCount": 1,
-      "lastAccessed": 1779802127639,
-      "type": "directory"
-    },
-    {
-      "path": "docs\\manual.md",
-      "accessCount": 1,
-      "lastAccessed": 1779815993248,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1779815993329,
-      "type": "file"
-    },
-    {
-      "path": "README_zh.md",
-      "accessCount": 1,
-      "lastAccessed": 1779816028881,
-      "type": "file"
-    },
-    {
-      "path": "styles.css",
-      "accessCount": 1,
-      "lastAccessed": 1779893337071,
-      "type": "file"
-    },
-    {
-      "path": "src\\custom-sort",
-      "accessCount": 1,
-      "lastAccessed": 1779972495584,
-      "type": "directory"
-    },
-    {
-      "path": "src-v2\\types.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779972964888,
-      "type": "file"
-    },
-    {
-      "path": "src-v2\\RecentIconsManager.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779972966574,
-      "type": "file"
-    },
-    {
-      "path": "docs\\examples\\basic\\sortspec.md",
-      "accessCount": 1,
-      "lastAccessed": 1779976884229,
-      "type": "file"
-    },
-    {
-      "path": "docs\\examples\\1\\sortspec.md",
-      "accessCount": 1,
-      "lastAccessed": 1779976898993,
-      "type": "file"
-    },
-    {
-      "path": "docs\\examples\\quickstart\\sortspec.md",
-      "accessCount": 1,
-      "lastAccessed": 1779976899020,
-      "type": "file"
-    },
-    {
-      "path": "src-v2",
-      "accessCount": 1,
-      "lastAccessed": 1779979694350,
-      "type": "directory"
     }
   ],
   "userDirectives": []

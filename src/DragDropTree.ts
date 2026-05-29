@@ -57,14 +57,14 @@ export class DragDropTree {
 		this.sortOrdersByFolder.clear();
 		this.customIconsByFolder.clear();
 
-		// 加载根目录的 sortspec
+		// 只加载根目录的 sortspec
 		await this.loadFolderSortSpec(root);
 
-		// 递归加载所有展开的文件夹的 sortspec
+		// 只加载展开文件夹的直接排序，不递归子文件夹
 		for (const expandedPath of this.expandedPaths) {
 			const folder = this.app.vault.getFolderByPath(expandedPath);
 			if (folder) {
-				await this.loadAllSubfolderSortSpecs(folder);
+				await this.loadFolderSortSpec(folder);
 			}
 		}
 
@@ -261,11 +261,8 @@ export class DragDropTree {
 		const folder = this.app.vault.getFolderByPath(node.path);
 		if (!folder) return;
 
-		// 加载当前文件夹的 sortspec
+		// 只加载当前文件夹的 sortspec，不递归
 		await this.loadFolderSortSpec(folder);
-
-		// 递归加载所有子文件夹的 sortspec
-		await this.loadAllSubfolderSortSpecs(folder);
 
 		// 构建节点
 		node.children = this.buildNodesFromFolder(folder);
@@ -723,9 +720,19 @@ export class DragDropTree {
 
 			new Notice(`已将 "${dragNode.name}" 移动到 "${targetFolder.name}"`);
 
+			// 增量更新：只更新涉及的排序映射
+			const sourceSpec = await this.sortSpecManager.load(sourcePath);
+			const targetSpec = await this.sortSpecManager.load(targetFolder.path);
+			if (sourceSpec) {
+				this.updateSortMapInMemory(sourcePath, sourceSpec.sortingSpec, sourceSpec.customIcons);
+			}
+			if (targetSpec) {
+				this.updateSortMapInMemory(targetFolder.path, targetSpec.sortingSpec, targetSpec.customIcons);
+			}
+
 			targetFolder.expanded = true;
 			this.expandedPaths.add(targetFolder.path);
-			await this.reload();
+			this.refreshTreeInPlace();
 		} catch (error) {
 			new Notice('移动失败: ' + (error as Error).message);
 			await this.reload();
@@ -776,7 +783,8 @@ export class DragDropTree {
 		if (targetIndex === -1) {
 			items.push(dragName);
 			await this.sortSpecManager.save(folderPath, items, spec.customIcons);
-			await this.reload();
+			this.updateSortMapInMemory(folderPath, items, spec.customIcons);
+			this.refreshTreeInPlace();
 			return;
 		}
 
@@ -786,8 +794,9 @@ export class DragDropTree {
 		items.splice(insertIndex, 0, dragName);
 
 		await this.sortSpecManager.save(folderPath, items, spec.customIcons);
+		this.updateSortMapInMemory(folderPath, items, spec.customIcons);
 		new Notice(`已更新排序`);
-		await this.reload();
+		this.refreshTreeInPlace();
 	}
 
 	private async moveToAnotherFolder(dragNode: TreeNode, targetNode: TreeNode, mode: 'before' | 'after'): Promise<void> {
@@ -811,6 +820,60 @@ export class DragDropTree {
 		} catch (error) {
 			new Notice('移动失败: ' + (error as Error).message);
 			await this.reload();
+		}
+	}
+
+	// 更新内存中的排序映射，避免重新构建整棵树
+	private updateSortMapInMemory(folderPath: string, sortingSpec: string[], customIcons: Record<string, string>): void {
+		const sortMap = new Map<string, number>();
+		sortingSpec.forEach((name, index) => {
+			sortMap.set(name, index);
+		});
+		this.sortOrdersByFolder.set(folderPath, sortMap);
+		this.customIconsByFolder.set(folderPath, customIcons);
+	}
+
+	// 只刷新当前显示的树节点，不重建整个树结构
+	private refreshTreeInPlace(): void {
+		if (!this.container?.parentNode) return;
+
+		const treeEl = this.container.querySelector('.sort-gui-tree') as HTMLElement;
+		if (!treeEl) return;
+
+		// 清空容器
+		treeEl.empty();
+
+		// 更新内存中的 tree 数组
+		this.tree = this.buildNodesFromFolder(this.app.vault.getRoot());
+
+		// 遍历展开的路径，确保子节点已加载
+		for (const node of this.tree) {
+			if (node.type === 'folder' && this.expandedPaths.has(node.path)) {
+				node.expanded = true;
+				this.ensureChildrenLoaded(node);
+			}
+		}
+
+		// 重新渲染
+		this.renderNodes(this.tree, treeEl);
+	}
+
+	// 确保子节点已加载
+	private ensureChildrenLoaded(node: TreeNode): void {
+		if (node.loaded) return;
+
+		const folder = this.app.vault.getFolderByPath(node.path);
+		if (!folder) return;
+
+		node.children = this.buildNodesFromFolder(folder);
+		node.loaded = true;
+
+		// 递归处理子节点
+		for (const child of node.children) {
+			if (child.type === 'folder' && this.expandedPaths.has(child.path)) {
+				child.expanded = true;
+				this.ensureChildrenLoaded(child);
+			}
 		}
 	}
 

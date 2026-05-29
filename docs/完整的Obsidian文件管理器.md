@@ -74,4 +74,9 @@ custom-icons:
 
 比如：有个文件夹叫 "docs/AI"，它下面有个md文件 "docs/AI/AI.md"，点击 "docs/AI" 时，应该直接打开 "docs/AI/AI.md"，同时展开 "docs/AI" 的目录树。但目录树中需要隐藏 "docs/AI/AI.md"
 
+---
 
+阅读 @.omc\plans\custom-sort-view-refactor.md，现在大部分功能已经实现，有以下需要优化的地方：
+
+1. 图标选择器默认应该选中“最近使用”，这个Tab也需要有搜索框，且选中的Tab需要有激活样式
+2. 性能优化：每次拖拽排序后，刷新目录树都很慢，需要1s左右，刷新过程中目录树还会闪烁。你看看是不是因为每次拖拽排序后都会递归遍历所有的sortspec.md？如果是这样，应该改为：如果是同一文件夹下的拖拽排序，只需要修改当前文件夹的sortspec.md；如果是跨文件夹的拖拽排序，只涉及修改源文件夹和目标文件夹的sortspec.md。避免每次拖拽都递归检查所有的sortspec.md

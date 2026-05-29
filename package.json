@@ -1,33 +1,33 @@
 {
-  "name": "obsidian-custom-sort",
-  "version": "3.1.7",
-  "description": "Custom Sort plugin for Obsidian (https://obsidian.md)",
-  "main": "dist/main.js",
-  "type": "module",
-  "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "dev:v2": "node esbuild.config.mjs --entry=src-v2/main.ts --out=dist/main.js",
-    "build": "node esbuild.config.mjs production",
-    "build:v2": "node esbuild.config.mjs production --entry=src-v2/main.ts --out=dist/main.js",
-    "typecheck": "tsc --noEmit --skipLibCheck",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
-  },
-  "keywords": [
-    "obsidian",
-    "custom sorting"
-  ],
-  "author": "SebastianMC",
-  "repository": "https://github.com/SebastianMC/obsidian-custom-sort",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^22.15.29",
-    "esbuild": "^0.25.3",
-    "obsidian": "^1.8.0"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "dependencies": {
-    "monkey-around": "^3.0.0"
-  }
+	"name": "obsidian-custom-sort",
+	"version": "3.1.7",
+	"description": "Custom Sort plugin for Obsidian (https://obsidian.md)",
+	"main": "dist/main.js",
+	"type": "module",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"dev:v2": "node esbuild.config.mjs --entry=src/main.ts --out=dist/main.js",
+		"build": "node esbuild.config.mjs production",
+		"build:v2": "node esbuild.config.mjs production --entry=src/main.ts --out=dist/main.js",
+		"typecheck": "tsc --noEmit --skipLibCheck",
+		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+	},
+	"keywords": [
+		"obsidian",
+		"custom sorting"
+	],
+	"author": "SebastianMC",
+	"repository": "https://github.com/SebastianMC/obsidian-custom-sort",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^22.15.29",
+		"esbuild": "^0.25.3",
+		"obsidian": "^1.8.0"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"dependencies": {
+		"monkey-around": "^3.0.0"
+	}
 }
