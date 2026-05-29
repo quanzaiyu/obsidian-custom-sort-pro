@@ -100,8 +100,8 @@
   "hotPaths": [
     {
       "path": "src\\DragDropTree.ts",
-      "accessCount": 42,
-      "lastAccessed": 1780029004452,
+      "accessCount": 57,
+      "lastAccessed": 1780042268999,
       "type": "file"
     },
     {
@@ -118,9 +118,15 @@
     },
     {
       "path": "",
-      "accessCount": 3,
-      "lastAccessed": 1780028917203,
+      "accessCount": 4,
+      "lastAccessed": 1780040616956,
       "type": "directory"
+    },
+    {
+      "path": "src\\InputModal.ts",
+      "accessCount": 3,
+      "lastAccessed": 1780042551204,
+      "type": "file"
     },
     {
       "path": "src\\types.ts",

@@ -1,7 +1,7 @@
 {
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd \\\"D:/Projects/obsidian-custom-sort\\\" && npm run build 2>&1\",\"description\":\"测试构建\"}",
-  "error": "Exit code 1\n\n> obsidian-custom-sort@3.1.7 build\n> node esbuild.config.mjs production\n\nBuilding: src/main.ts -> dist/main.js\n✘ [ERROR] Could not resolve \"monkey-around\"\n\n    src/main.ts:19:21:\n      19 │ import {around} from 'monkey-around';\n         ╵                      ~~~~~~~~~~~~~~~\n\n  You can mark the path \"monkey-around\" as external to exclude it from the bundle, which will remove this error and leave the unresolved path in the bundle.\n\n1 error\nD:\\Projects\\obsidian-custom-sort\\node_module...",
-  "timestamp": "2026-05-28T13:09:43.780Z",
-  "retry_count": 3
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"D:\\\\projects\\\\my_project\\\\makemd\\\\main.js\",\"offset\":30,\"limit\":10}",
+  "error": "File content (132967 tokens) exceeds maximum allowed tokens (25000). Use offset and limit parameters to read specific portions of the file, or search for specific content instead of reading the whole file.",
+  "timestamp": "2026-05-29T07:44:02.864Z",
+  "retry_count": 2
 }
