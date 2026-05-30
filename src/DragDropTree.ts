@@ -33,20 +33,17 @@ export class DragDropTree {
 	}
 
 	private registerVaultListener(): void {
-		const plugin = this;
-		this.app.vault.on('delete', () => {
-			console.log('[DragDropTree] delete 事件触发');
-			this.sortSpecManager.clearCache();
-			this.reload();
+		this.app.vault.on('delete', (file: TAbstractFile) => {
+			console.log('[DragDropTree] delete 事件触发:', file.path);
+			this.refreshFolderChildren(file.path);
 		});
-		this.app.vault.on('create', () => {
-			console.log('[DragDropTree] create 事件触发');
-			this.sortSpecManager.clearCache();
-			this.reload();
+		this.app.vault.on('create', (file: TAbstractFile) => {
+			console.log('[DragDropTree] create 事件触发:', file.path);
+			this.refreshFolderChildren(file.path);
 		});
-		this.app.vault.on('rename', () => {
-			this.sortSpecManager.clearCache();
-			this.reload();
+		this.app.vault.on('rename', (file: TAbstractFile, oldPath: string) => {
+			console.log('[DragDropTree] rename 事件触发:', oldPath, '->', file.path);
+			this.refreshFolderChildren(file.path);
 		});
 	}
 
@@ -146,6 +143,37 @@ export class DragDropTree {
 		const iconEl = el.querySelector('.sort-gui-item-icon');
 		if (iconEl) {
 			this.renderNodeIcon(iconEl as HTMLElement, node);
+		}
+	}
+
+	// 刷新指定文件的父目录
+	private async refreshFolderChildren(filePath: string): Promise<void> {
+		const parentPath = this.getParentPath(filePath);
+		const treeEl = this.container?.querySelector('.sort-gui-tree');
+		if (!treeEl) return;
+
+		// 找到父目录对应的节点
+		const parentNode = this.findNodeByPath(parentPath, this.tree);
+		if (!parentNode) return;
+
+		// 重新加载该目录的 sortspec
+		const folder = this.app.vault.getFolderByPath(parentPath);
+		if (folder) {
+			await this.loadFolderSortSpec(folder);
+		}
+
+		// 重新构建子节点
+		parentNode.children = this.buildNodesFromFolder(folder!);
+		parentNode.loaded = true;
+
+		// 更新 DOM 中的子节点
+		const existingChildrenEl = treeEl.querySelector(`[data-parent-id="${parentNode.id}"]`);
+		if (existingChildrenEl) {
+			existingChildrenEl.empty();
+			this.renderNodes(parentNode.children, existingChildrenEl as HTMLElement);
+		} else {
+			// 如果没有子容器，可能是根目录，直接刷新整个树
+			this.refreshTreeInPlace();
 		}
 	}
 
@@ -583,13 +611,8 @@ tags: [excalidraw]
 				this.onIconChange?.(node, undefined);
 			},
 			onFileCreated: async (filePath: string) => {
-				// 上传新文件后清理 sortspec 缓存，让下次加载时读取最新数据
-				this.sortSpecManager.clearCache();
-				// 通知外部有新文件
-				const node = this.findNodeByPath(filePath, this.tree);
-				if (node) {
-					this.onIconChange?.(node, node.customIcon);
-				}
+				// 上传新文件后，只刷新该文件的父目录
+				this.refreshFolderChildren(filePath);
 			}
 		}).open();
 	}
