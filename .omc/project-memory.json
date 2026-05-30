@@ -165,6 +165,18 @@
       "type": "file"
     },
     {
+      "path": "README.md",
+      "accessCount": 2,
+      "lastAccessed": 1780126765805,
+      "type": "file"
+    },
+    {
+      "path": "manifest.json",
+      "accessCount": 2,
+      "lastAccessed": 1780126789257,
+      "type": "file"
+    },
+    {
       "path": "src\\RecentIconsManager.ts",
       "accessCount": 1,
       "lastAccessed": 1780107446596,

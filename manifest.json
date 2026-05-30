@@ -1,10 +1,10 @@
 {
-	"id": "custom-sort",
-	"name": "Custom File Explorer sorting",
+	"id": "custom-sort-folder-view",
+	"name": "Custom Sort Folder View",
 	"version": "3.2.0",
 	"minAppVersion": "1.8.0",
-	"description": "Allows for manual and automatic, config-driven reordering and sorting of files and folders in File Explorer",
-	"author": "SebastianMC",
-	"authorUrl": "https://github.com/SebastianMC",
+	"description": "Obsidian 自定义排序文件夹视图插件 - 可视化拖拽排序，自定义图标，多级目录支持",
+	"author": "quanzaiyu",
+	"authorUrl": "https://github.com/quanzaiyu/obsidian-custom-sort-folder-view",
 	"isDesktopOnly": false
 }
