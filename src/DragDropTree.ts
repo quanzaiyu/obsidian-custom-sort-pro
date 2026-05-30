@@ -57,27 +57,36 @@ export class DragDropTree {
 
 	// 增量更新：只更新变化的节点，不清空整个 DOM
 	private refreshTreeInPlace(): void {
-		if (!this.container?.parentNode) return;
+		if (!this.container?.parentNode) {
+			console.log('[refreshTreeInPlace] container 无父节点');
+			return;
+		}
 
 		const treeEl = this.container.querySelector('.sort-gui-tree');
 		if (!treeEl) {
-			// 如果没有树元素，完整渲染
+			console.log('[refreshTreeInPlace] 没有 treeEl，完整渲染');
 			this.render();
 			return;
 		}
+
+		console.log('[refreshTreeInPlace] treeEl 子元素数量:', treeEl.children.length);
 
 		// 获取旧的 DOM 元素映射
 		const oldElements = new Map<string, HTMLElement>();
 		treeEl.querySelectorAll('.sort-gui-tree-item[data-path]').forEach(el => {
 			oldElements.set((el as HTMLElement).dataset.path || '', el as HTMLElement);
 		});
+		console.log('[refreshTreeInPlace] oldElements 数量:', oldElements.size);
+		console.log('[refreshTreeInPlace] tree 长度:', this.tree.length);
 
 		// 比较并更新节点
 		this.updateTreeNodesInPlace(treeEl, this.tree, oldElements);
+
+		console.log('[refreshTreeInPlace] 完成后 treeEl 子元素数量:', treeEl.children.length);
 	}
 
-	private updateTreeNodesInPlace(parentEl: HTMLElement, nodes: TreeNode[], oldElements: Map<string, HTMLElement>): void {
-		const existingPaths = new Set<string>();
+	private updateTreeNodesInPlace(parentEl: HTMLElement, nodes: TreeNode[], oldElements: Map<string, HTMLElement>, parentPaths?: Set<string>): void {
+		const existingPaths = new Set<string>(parentPaths || []);
 
 		for (const node of nodes) {
 			existingPaths.add(node.path);
@@ -86,6 +95,22 @@ export class DragDropTree {
 			if (oldEl) {
 				// 节点已存在，更新内容
 				this.updateNodeContent(oldEl, node);
+
+				// 如果文件夹已展开且有子节点
+				if (node.type === 'folder' && node.expanded && node.hasChildren && node.children && node.children.length > 0) {
+					let childrenEl = oldEl.querySelector(':scope + .sort-gui-tree-children') as HTMLElement;
+					if (!childrenEl) {
+						// 没有子容器，在 oldEl 后面创建
+						childrenEl = createDiv('sort-gui-tree-children');
+						childrenEl.dataset.parentId = node.id;
+						// 渲染子节点
+						this.renderNodes(node.children, childrenEl);
+						// 插入到 oldEl 后面
+						oldEl.after(childrenEl);
+					}
+					// 递归更新子节点，传递新的 existingPaths
+					this.updateTreeNodesInPlace(childrenEl, node.children, oldElements, existingPaths);
+				}
 			} else {
 				// 新节点，插入到正确位置
 				const itemEl = this.createTreeItem(node);
@@ -94,10 +119,13 @@ export class DragDropTree {
 			}
 		}
 
-		// 移除被删除的节点
-		for (const [path, el] of oldElements) {
-			if (!existingPaths.has(path)) {
-				el.remove();
+		// 移除被删除的节点（只移除当前层级的）
+		if (!parentPaths) {
+			// 只有在根层级才移除
+			for (const [path, el] of oldElements) {
+				if (!existingPaths.has(path)) {
+					el.remove();
+				}
 			}
 		}
 	}
@@ -152,12 +180,71 @@ export class DragDropTree {
 		const treeEl = this.container?.querySelector('.sort-gui-tree');
 		if (!treeEl) return;
 
+		console.log('[refreshFolderChildren] filePath:', filePath, 'parentPath:', parentPath);
+
 		// 根目录特殊处理
 		if (parentPath === '/') {
+			console.log('[refreshFolderChildren] 根目录刷新');
+			// 保存当前展开状态
+			const savedExpandedPaths = new Set(this.expandedPaths);
+			console.log('[refreshFolderChildren] savedExpandedPaths:', Array.from(savedExpandedPaths));
+
+			// 重新加载根目录的 sortspec
 			await this.loadFolderSortSpec(this.app.vault.getRoot());
-			this.tree = this.buildNodesFromFolder(this.app.vault.getRoot());
-			// 恢复展开状态
-			this.restoreExpandedState();
+
+			// 获取新的根目录内容
+			const root = this.app.vault.getAbstractFileByPath('/') as TFolder;
+			const newRootChildren: TreeNode[] = [];
+			for (const child of root.children) {
+				if (this.isFolderNote(child.name, root)) continue;
+
+				const nameWithoutExt = child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name;
+				const sortMap = this.sortOrdersByFolder.get('/') || new Map<string, number>();
+
+				const isExpanded = savedExpandedPaths.has(child.path);
+				const node: TreeNode = {
+					id: child.path,
+					name: child.name,
+					type: child instanceof TFolder ? 'folder' : 'file',
+					path: child.path,
+					children: [],
+					hasChildren: child instanceof TFolder && child.children.length > 0,
+					expanded: isExpanded,
+					loaded: false,
+					sortOrder: sortMap.get(nameWithoutExt)
+				};
+
+				const icons = this.customIconsByFolder.get('/') || {};
+				if (icons[nameWithoutExt]) {
+					node.customIcon = icons[nameWithoutExt];
+				}
+
+				newRootChildren.push(node);
+			}
+
+			// 排序
+			newRootChildren.sort((a, b) => {
+				if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
+					return a.sortOrder - b.sortOrder;
+				}
+				if (a.sortOrder !== undefined) return -1;
+				if (b.sortOrder !== undefined) return 1;
+				return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+			});
+
+			// 递归加载已展开的子文件夹
+			for (const node of newRootChildren) {
+				if (node.expanded) {
+					console.log('[refreshFolderChildren] 加载子节点:', node.name);
+					await this.loadNodeChildren(node);
+				}
+			}
+
+			// 保存到 tree
+			this.tree = newRootChildren;
+			console.log('[refreshFolderChildren] tree 节点:', this.tree.map(n => ({ name: n.name, expanded: n.expanded, children: n.children?.length })));
+
+			// 更新 DOM
 			this.refreshTreeInPlace();
 			return;
 		}
@@ -182,23 +269,42 @@ export class DragDropTree {
 			existingChildrenEl.empty();
 			this.renderNodes(parentNode.children, existingChildrenEl as HTMLElement);
 		} else {
-			// 如果没有子容器，刷新整个树并恢复展开状态
-			await this.buildTree();
-			this.restoreExpandedState();
+			// 如果没有子容器，刷新整个树
+			await this.loadExpandedSubfolders(this.tree);
 			this.refreshTreeInPlace();
 		}
 	}
 
-	// 保存当前展开状态
-	private saveExpandedState(): string[] {
-		return Array.from(this.expandedPaths);
+	// 加载节点的子节点
+	private async loadNodeChildren(node: TreeNode): Promise<void> {
+		const folder = this.app.vault.getFolderByPath(node.path);
+		if (!folder) return;
+
+		await this.loadFolderSortSpec(folder);
+		node.children = this.buildNodesFromFolder(folder);
+		node.loaded = true;
+
+		for (const child of node.children) {
+			if (child.type === 'folder' && child.expanded) {
+				await this.loadNodeChildren(child);
+			}
+		}
 	}
 
-	// 恢复展开状态
-	private restoreExpandedState(): void {
-		for (const node of this.tree) {
-			if (this.expandedPaths.has(node.path)) {
+	// 递归加载已展开的子文件夹
+	private async loadExpandedSubfolders(nodes: TreeNode[]): Promise<void> {
+		for (const node of nodes) {
+			if (node.type === 'folder' && this.expandedPaths.has(node.path)) {
 				node.expanded = true;
+				const folder = this.app.vault.getFolderByPath(node.path);
+				if (folder) {
+					await this.loadFolderSortSpec(folder);
+					node.children = this.buildNodesFromFolder(folder);
+					node.loaded = true;
+					if (node.children.length > 0) {
+						await this.loadExpandedSubfolders(node.children);
+					}
+				}
 			}
 		}
 	}
