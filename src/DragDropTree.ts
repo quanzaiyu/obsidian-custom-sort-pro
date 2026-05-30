@@ -50,12 +50,103 @@ export class DragDropTree {
 		});
 	}
 
-	async reload(): Promise<void> {
+	private async reload(): Promise<void> {
 		console.log('[DragDropTree] reload 开始');
 		await this.buildTree();
 		console.log('[DragDropTree] buildTree 完成');
-		this.render();
-		console.log('[DragDropTree] render 完成');
+		this.refreshTreeInPlace();
+		console.log('[DragDropTree] refreshTreeInPlace 完成');
+	}
+
+	// 增量更新：只更新变化的节点，不清空整个 DOM
+	private refreshTreeInPlace(): void {
+		if (!this.container?.parentNode) return;
+
+		const treeEl = this.container.querySelector('.sort-gui-tree');
+		if (!treeEl) {
+			// 如果没有树元素，完整渲染
+			this.render();
+			return;
+		}
+
+		// 获取旧的 DOM 元素映射
+		const oldElements = new Map<string, HTMLElement>();
+		treeEl.querySelectorAll('.sort-gui-tree-item[data-path]').forEach(el => {
+			oldElements.set((el as HTMLElement).dataset.path || '', el as HTMLElement);
+		});
+
+		// 比较并更新节点
+		this.updateTreeNodesInPlace(treeEl, this.tree, oldElements);
+	}
+
+	private updateTreeNodesInPlace(parentEl: HTMLElement, nodes: TreeNode[], oldElements: Map<string, HTMLElement>): void {
+		const existingPaths = new Set<string>();
+
+		for (const node of nodes) {
+			existingPaths.add(node.path);
+			const oldEl = oldElements.get(node.path);
+
+			if (oldEl) {
+				// 节点已存在，更新内容
+				this.updateNodeContent(oldEl, node);
+			} else {
+				// 新节点，插入到正确位置
+				const itemEl = this.createTreeItem(node);
+				itemEl.style.animation = 'none'; // 新节点不需要动画
+				this.insertNodeInOrder(parentEl, itemEl, node);
+			}
+		}
+
+		// 移除被删除的节点
+		for (const [path, el] of oldElements) {
+			if (!existingPaths.has(path)) {
+				el.remove();
+			}
+		}
+	}
+
+	private insertNodeInOrder(parentEl: HTMLElement, newEl: HTMLElement, node: TreeNode): void {
+		const children = Array.from(parentEl.children) as HTMLElement[];
+		const nodeIndex = this.getNodeSortIndex(node);
+
+		for (let i = 0; i < children.length; i++) {
+			const child = children[i];
+			const childPath = child.dataset.path;
+			if (childPath) {
+				const childNode = this.findNodeByPath(childPath, this.tree);
+				if (childNode && this.getNodeSortIndex(childNode) > nodeIndex) {
+					parentEl.insertBefore(newEl, child);
+					return;
+				}
+			}
+		}
+
+		parentEl.appendChild(newEl);
+	}
+
+	private findNodeByPath(path: string, nodes: TreeNode[]): TreeNode | null {
+		for (const node of nodes) {
+			if (node.path === path) return node;
+			if (node.children) {
+				const found = this.findNodeByPath(path, node.children);
+				if (found) return found;
+			}
+		}
+		return null;
+	}
+
+	private getNodeSortIndex(node: TreeNode): number {
+		const sortMap = this.sortOrdersByFolder.get(this.getParentPath(node.path)) || new Map<string, number>();
+		const nameWithoutExt = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
+		return sortMap.get(nameWithoutExt) ?? 999999;
+	}
+
+	private updateNodeContent(el: HTMLElement, node: TreeNode): void {
+		// 更新图标
+		const iconEl = el.querySelector('.sort-gui-item-icon');
+		if (iconEl) {
+			this.renderNodeIcon(iconEl as HTMLElement, node);
+		}
 	}
 
 	private async buildTree(): Promise<void> {
@@ -373,6 +464,7 @@ tags: [excalidraw]
 
 	private createTreeItem(node: TreeNode): HTMLElement {
 		const itemEl = createDiv('sort-gui-tree-item');
+		itemEl.dataset.path = node.path;
 
 		if (node.type === 'folder' && node.hasChildren) {
 			const toggleEl = itemEl.createDiv('sort-gui-item-toggle');
@@ -491,8 +583,13 @@ tags: [excalidraw]
 				this.onIconChange?.(node, undefined);
 			},
 			onFileCreated: async (filePath: string) => {
-				// 上传新文件后刷新目录树
-				await this.reload();
+				// 上传新文件后清理 sortspec 缓存，让下次加载时读取最新数据
+				this.sortSpecManager.clearCache();
+				// 通知外部有新文件
+				const node = this.findNodeByPath(filePath, this.tree);
+				if (node) {
+					this.onIconChange?.(node, node.customIcon);
+				}
 			}
 		}).open();
 	}
@@ -865,31 +962,6 @@ tags: [excalidraw]
 		});
 		this.sortOrdersByFolder.set(folderPath, sortMap);
 		this.customIconsByFolder.set(folderPath, customIcons);
-	}
-
-	// 只刷新当前显示的树节点，不重建整个树结构
-	private refreshTreeInPlace(): void {
-		if (!this.container?.parentNode) return;
-
-		const treeEl = this.container.querySelector('.sort-gui-tree') as HTMLElement;
-		if (!treeEl) return;
-
-		// 清空容器
-		treeEl.empty();
-
-		// 更新内存中的 tree 数组
-		this.tree = this.buildNodesFromFolder(this.app.vault.getRoot());
-
-		// 遍历展开的路径，确保子节点已加载
-		for (const node of this.tree) {
-			if (node.type === 'folder' && this.expandedPaths.has(node.path)) {
-				node.expanded = true;
-				this.ensureChildrenLoaded(node);
-			}
-		}
-
-		// 重新渲染
-		this.renderNodes(this.tree, treeEl);
 	}
 
 	// 确保子节点已加载

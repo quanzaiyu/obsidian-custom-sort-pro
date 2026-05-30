@@ -446,11 +446,8 @@ export class IconPickerModal extends Modal {
 				// 检查文件是否已存在
 				const existingFile = this.app.vault.getAbstractFileByPath(newPath);
 				if (existingFile instanceof TFile) {
-					if (!confirm(`文件 "${iconName}.${ext}" 已存在，是否覆盖?`)) {
-						resetUploadArea();
-						return;
-					}
-					await this.app.vault.delete(existingFile);
+					new Notice(`文件 "${iconName}.${ext}" 已存在`);
+					return
 				}
 
 				try {
@@ -458,16 +455,10 @@ export class IconPickerModal extends Modal {
 					const uint8Array = new Uint8Array(arrayBuffer);
 					const createdFile = await this.app.vault.createBinary(newPath, uint8Array);
 
-					console.log('[IconPicker] 上传成功，触发 create 事件:', newPath);
-
-					// 触发 create 事件，让 DragDropTree 的监听器收到通知
 					this.app.vault.trigger('create', createdFile);
-
 					this.recentManager.add(newPath, true);
-					this.callbacks.onFileCreated?.(newPath);
-					console.log('[IconPicker] onFileCreated 回调完成');
+
 					this.callbacks.onSelect(newPath);
-					console.log('[IconPicker] onSelect 回调完成，即将关闭弹窗');
 					this.close();
 				} catch (e) {
 					console.error('上传失败:', e);
@@ -509,8 +500,6 @@ export class IconPickerModal extends Modal {
 					const arrayBuffer = await file.arrayBuffer();
 					const uint8Array = new Uint8Array(arrayBuffer);
 					const createdFile = await this.app.vault.createBinary(newPath, uint8Array);
-
-					console.log('[IconPicker] 上传成功:', newPath);
 
 					// 触发 create 事件
 					this.app.vault.trigger('create', createdFile);
