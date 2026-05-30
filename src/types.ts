@@ -16,6 +16,7 @@ export interface TreeNode {
 export interface IconPickerCallbacks {
 	onSelect: (icon: string) => void;
 	onClear: () => void;
+	onFileCreated?: (filePath: string) => void;
 }
 
 export interface SortSpec {

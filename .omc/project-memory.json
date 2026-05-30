@@ -100,14 +100,20 @@
   "hotPaths": [
     {
       "path": "src\\DragDropTree.ts",
-      "accessCount": 75,
-      "lastAccessed": 1780061744339,
+      "accessCount": 99,
+      "lastAccessed": 1780111967084,
       "type": "file"
     },
     {
       "path": "src\\IconPickerModal.ts",
-      "accessCount": 26,
-      "lastAccessed": 1780027372565,
+      "accessCount": 70,
+      "lastAccessed": 1780111144485,
+      "type": "file"
+    },
+    {
+      "path": "src\\SortSpecManager.ts",
+      "accessCount": 9,
+      "lastAccessed": 1780109380594,
       "type": "file"
     },
     {
@@ -117,27 +123,51 @@
       "type": "file"
     },
     {
+      "path": "",
+      "accessCount": 5,
+      "lastAccessed": 1780098764792,
+      "type": "directory"
+    },
+    {
+      "path": "src",
+      "accessCount": 5,
+      "lastAccessed": 1780111267876,
+      "type": "directory"
+    },
+    {
       "path": "src\\styles.css",
       "accessCount": 4,
       "lastAccessed": 1780025661301,
       "type": "file"
     },
     {
-      "path": "",
-      "accessCount": 4,
-      "lastAccessed": 1780040616956,
-      "type": "directory"
-    },
-    {
       "path": "src\\types.ts",
-      "accessCount": 2,
-      "lastAccessed": 1780025626154,
+      "accessCount": 4,
+      "lastAccessed": 1780110692791,
       "type": "file"
     },
     {
-      "path": "src\\SortSpecManager.ts",
+      "path": "src\\icons.ts",
+      "accessCount": 3,
+      "lastAccessed": 1780104409846,
+      "type": "file"
+    },
+    {
+      "path": "src\\main.ts",
+      "accessCount": 2,
+      "lastAccessed": 1780110342115,
+      "type": "file"
+    },
+    {
+      "path": "src\\MySortView.ts",
+      "accessCount": 2,
+      "lastAccessed": 1780110363989,
+      "type": "file"
+    },
+    {
+      "path": "src\\RecentIconsManager.ts",
       "accessCount": 1,
-      "lastAccessed": 1780023797182,
+      "lastAccessed": 1780107446596,
       "type": "file"
     }
   ],

@@ -22,8 +22,7 @@
     }
   },
   "include": [
-    "src/main.ts",
-    "src-v2/main.ts"
+    "src/main.ts"
   ],
   "exclude": [
     "node_modules",

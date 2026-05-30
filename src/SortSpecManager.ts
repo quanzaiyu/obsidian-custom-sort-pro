@@ -57,13 +57,20 @@ export class SortSpecManager {
 			const specRaw = frontmatter?.['sorting-spec'];
 			if (Array.isArray(specRaw)) {
 				sortingSpec = specRaw.filter((item: any) => typeof item === 'string');
+				// 修复 surrogate pairs 问题
+				sortingSpec = sortingSpec.map(s => this.fixSurrogatePairs(s));
 			}
 
 			// 解析 custom-icons
 			let customIcons: Record<string, string> = {};
 			const iconsRaw = frontmatter?.['custom-icons'];
 			if (iconsRaw && typeof iconsRaw === 'object' && !Array.isArray(iconsRaw)) {
-				customIcons = iconsRaw as Record<string, string>;
+				const raw = iconsRaw as Record<string, any>;
+				for (const key in raw) {
+					if (typeof raw[key] === 'string') {
+						customIcons[this.fixSurrogatePairs(key)] = this.fixSurrogatePairs(raw[key]);
+					}
+				}
 			}
 
 			return { sortingSpec, customIcons };
@@ -71,6 +78,15 @@ export class SortSpecManager {
 			console.error('读取sortspec失败:', error);
 			return null;
 		}
+	}
+
+	// 修复 YAML 解析导致的 surrogate pairs 问题
+	private fixSurrogatePairs(str: string): string {
+		if (!str) return str;
+		// 匹配 😊 这样的代理对并转换为真正的 emoji
+		return str.replace(/\\u([0-9a-fA-F]{4})\\u([0-9a-fA-F]{4})/g, (_, p1, p2) => {
+			return String.fromCodePoint(parseInt(p1, 16), parseInt(p2, 16));
+		});
 	}
 
 	async save(folderPath: string, sortingSpec: string[], customIcons: Record<string, string>): Promise<void> {
@@ -98,8 +114,20 @@ export class SortSpecManager {
 
 		// 如果文件不存在，创建它
 		try {
-			const initialContent = `---\nsorting-spec:\n  - ${sortingSpec.join('\n  - ')}\n---\n`;
-			await this.app.vault.create(sortspecPath, initialContent);
+			// 直接写入包含 emoji 的 frontmatter，不使用 JSON.stringify 避免转义
+			const lines: string[] = [];
+			lines.push('sorting-spec:');
+			for (const item of sortingSpec) {
+				lines.push(`  - ${item}`);
+			}
+			if (Object.keys(customIcons).length > 0) {
+				lines.push('custom-icons:');
+				for (const [key, value] of Object.entries(customIcons)) {
+					lines.push(`  ${key}: ${value}`);
+				}
+			}
+			const content = `---\n${lines.join('\n')}\n---`;
+			await this.app.vault.create(sortspecPath, content);
 			file = this.app.vault.getAbstractFileByPath(sortspecPath);
 			if (file instanceof TFile) {
 				await this.app.fileManager.processFrontMatter(file, (frontmatter) => {

@@ -35,10 +35,12 @@ export class DragDropTree {
 	private registerVaultListener(): void {
 		const plugin = this;
 		this.app.vault.on('delete', () => {
+			console.log('[DragDropTree] delete 事件触发');
 			this.sortSpecManager.clearCache();
 			this.reload();
 		});
 		this.app.vault.on('create', () => {
+			console.log('[DragDropTree] create 事件触发');
 			this.sortSpecManager.clearCache();
 			this.reload();
 		});
@@ -49,12 +51,19 @@ export class DragDropTree {
 	}
 
 	async reload(): Promise<void> {
+		console.log('[DragDropTree] reload 开始');
 		await this.buildTree();
+		console.log('[DragDropTree] buildTree 完成');
 		this.render();
+		console.log('[DragDropTree] render 完成');
 	}
 
 	private async buildTree(): Promise<void> {
-		const root = this.app.vault.getRoot();
+		console.log('[DragDropTree] buildTree 内部');
+		// 使用 getAbstractFileByPath 获取最新的 root 引用，避免缓存问题
+		const root = this.app.vault.getAbstractFileByPath('/') as TFolder;
+		console.log('[DragDropTree] root children names:', root.children.map(c => c.name));
+		console.log('[DragDropTree] root children count:', root.children.length);
 		this.sortOrdersByFolder.clear();
 		this.customIconsByFolder.clear();
 
@@ -70,6 +79,7 @@ export class DragDropTree {
 		}
 
 		this.tree = this.buildNodesFromFolder(root);
+		console.log('[DragDropTree] tree 节点数:', this.tree.length);
 	}
 
 	private async loadAllSubfolderSortSpecs(folder: TFolder): Promise<void> {
@@ -86,15 +96,25 @@ export class DragDropTree {
 		const folderPath = folder.path;
 		const spec = await this.sortSpecManager.load(folderPath);
 
-		if (spec && spec.sortingSpec.length > 0) {
-			const sortMap = new Map<string, number>();
-			spec.sortingSpec.forEach((name, index) => {
-				sortMap.set(name, index);
-			});
-			this.sortOrdersByFolder.set(folderPath, sortMap);
-			this.customIconsByFolder.set(folderPath, spec.customIcons);
+		if (spec) {
+			if (spec.sortingSpec.length > 0) {
+				const sortMap = new Map<string, number>();
+				spec.sortingSpec.forEach((name, index) => {
+					sortMap.set(name, index);
+				});
+				this.sortOrdersByFolder.set(folderPath, sortMap);
+			} else {
+				this.sortOrdersByFolder.delete(folderPath);
+			}
+
+			// 只要有 customIcons 就保存，不管 sortingSpec 是否为空
+			if (Object.keys(spec.customIcons).length > 0) {
+				this.customIconsByFolder.set(folderPath, spec.customIcons);
+			} else {
+				this.customIconsByFolder.delete(folderPath);
+			}
 		} else {
-			// 清除之前的缓存（如果有）
+			// spec 为 null，清除所有缓存
 			this.sortOrdersByFolder.delete(folderPath);
 			this.customIconsByFolder.delete(folderPath);
 		}
@@ -469,6 +489,10 @@ tags: [excalidraw]
 				this.renderNodeIcon(iconEl, node);
 				await this.saveCustomIcon(node);
 				this.onIconChange?.(node, undefined);
+			},
+			onFileCreated: async (filePath: string) => {
+				// 上传新文件后刷新目录树
+				await this.reload();
 			}
 		}).open();
 	}
@@ -611,7 +635,24 @@ tags: [excalidraw]
 			item.setTitle('删除').setIcon('trash').onClick(async () => {
 				const file = this.app.vault.getAbstractFileByPath(node.path);
 				if (file && confirm(`确定要删除 "${node.name}" 吗?`)) {
+					// 删除前获取父目录路径
+					const parentPath = this.getParentPath(node.path);
+					const nameWithoutExt = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
+
 					await this.app.vault.delete(file);
+
+					// 从 sortspec.md 中移除该文件
+					const spec = await this.sortSpecManager.load(parentPath);
+					if (spec) {
+						// 从 sorting-spec 中移除
+						const newSortingSpec = spec.sortingSpec.filter(name => {
+							const n = name.endsWith('.md') ? name.slice(0, -3) : name;
+							return n !== nameWithoutExt;
+						});
+						// 从 custom-icons 中移除
+						const { [nameWithoutExt]: _, ...remainingIcons } = spec.customIcons;
+						await this.sortSpecManager.save(parentPath, newSortingSpec, remainingIcons);
+					}
 				}
 			});
 		});

@@ -1,12 +1,17 @@
-import { App, Modal, TFile, TFolder } from 'obsidian';
+import { App, Modal, TFile, TFolder, Notice } from 'obsidian';
 import type { IconPickerCallbacks, RecentIcon } from './types';
 import { RecentIconsManager } from './RecentIconsManager';
+import { defaultEmojiCategories } from './icons';
 
-interface EmojiItem {
-	category: string;
+interface EmojiIcon {
 	icon: string;
 	name: string;
 	nameEn: string;
+}
+
+interface EmojiCategory {
+	category: string;
+	icons: EmojiIcon[];
 }
 
 export class IconPickerModal extends Modal {
@@ -16,112 +21,44 @@ export class IconPickerModal extends Modal {
 	private customIcons: { name: string; path: string }[] = [];
 	private contentArea!: HTMLElement;
 	private tabsContainer!: HTMLElement;
-	private emojiNameMap: Map<string, string> = new Map();
-
-	private emojiItems: EmojiItem[] = [
-		{ category: '文件', icon: '📄', name: '文件', nameEn: 'File' },
-		{ category: '文件', icon: '📝', name: '笔记', nameEn: 'Note' },
-		{ category: '文件', icon: '📃', name: '文档', nameEn: 'Document' },
-		{ category: '文件', icon: '📋', name: '剪贴板', nameEn: 'Clipboard' },
-		{ category: '文件', icon: '📑', name: '书签', nameEn: 'Bookmark' },
-		{ category: '文件', icon: '📰', name: '报纸', nameEn: 'Newspaper' },
-		{ category: '文件', icon: '📖', name: '书', nameEn: 'Book' },
-		{ category: '文件夹', icon: '📁', name: '文件夹', nameEn: 'Folder' },
-		{ category: '文件夹', icon: '📂', name: '打开的文件夹', nameEn: 'Open Folder' },
-		{ category: '文件夹', icon: '🗂️', name: '卡片索引', nameEn: 'Card Index' },
-		{ category: '文件夹', icon: '🗃️', name: '文件柜', nameEn: 'File Cabinet' },
-		{ category: '文件夹', icon: '📭', name: '收件箱', nameEn: 'Inbox' },
-		{ category: '箭头', icon: '▶', name: '播放', nameEn: 'Play' },
-		{ category: '箭头', icon: '🔽', name: '向下指', nameEn: 'Down' },
-		{ category: '箭头', icon: '🔼', name: '向上指', nameEn: 'Up' },
-		{ category: '箭头', icon: '➡', name: '右箭头', nameEn: 'Right' },
-		{ category: '箭头', icon: '🔀', name: '双向箭头', nameEn: 'Shuffle' },
-		{ category: '箭头', icon: '🔁', name: '循环箭头', nameEn: 'Repeat' },
-		{ category: '状态', icon: '✅', name: '勾选', nameEn: 'Check' },
-		{ category: '状态', icon: '❌', name: '叉', nameEn: 'Cross' },
-		{ category: '状态', icon: '⭐', name: '星', nameEn: 'Star' },
-		{ category: '状态', icon: '✨', name: '闪星', nameEn: 'Sparkles' },
-		{ category: '状态', icon: '🎯', name: '靶心', nameEn: 'Target' },
-		{ category: '状态', icon: '❓', name: '问号', nameEn: 'Question' },
-		{ category: '状态', icon: '⚠️', name: '警告', nameEn: 'Warning' },
-		{ category: '状态', icon: '💯', name: '百分号', nameEn: 'Hundred' },
-		{ category: '时间', icon: '📅', name: '日历', nameEn: 'Calendar' },
-		{ category: '时间', icon: '📆', name: '旋转日历', nameEn: 'Tear-off Calendar' },
-		{ category: '时间', icon: '⏰', name: '闹钟', nameEn: 'Alarm' },
-		{ category: '时间', icon: '⏱️', name: '秒表', nameEn: 'Stopwatch' },
-		{ category: '工具', icon: '🔍', name: '放大镜', nameEn: 'Magnifying Glass' },
-		{ category: '工具', icon: '🔑', name: '钥匙', nameEn: 'Key' },
-		{ category: '工具', icon: '⚙️', name: '齿轮', nameEn: 'Gear' },
-		{ category: '工具', icon: '🔧', name: '扳手', nameEn: 'Wrench' },
-		{ category: '工具', icon: '🔨', name: '锤子', nameEn: 'Hammer' },
-		{ category: '工具', icon: '🛠️', name: '工具', nameEn: 'Hammer & Wrench' },
-		{ category: '位置', icon: '🏠', name: '房子', nameEn: 'House' },
-		{ category: '位置', icon: '🏢', name: '办公楼', nameEn: 'Office' },
-		{ category: '位置', icon: '🏥', name: '医院', nameEn: 'Hospital' },
-		{ category: '位置', icon: '🏦', name: '银行', nameEn: 'Bank' },
-		{ category: '位置', icon: '🏫', name: '学校', nameEn: 'School' },
-		{ category: '学习', icon: '🧠', name: '大脑', nameEn: 'Brain' },
-		{ category: '学习', icon: '💡', name: '灯泡', nameEn: 'Idea' },
-		{ category: '学习', icon: '🎓', name: '毕业帽', nameEn: 'Graduation' },
-		{ category: '学习', icon: '📚', name: '书籍', nameEn: 'Books' },
-		{ category: '学习', icon: '🔬', name: '显微镜', nameEn: 'Microscope' },
-		{ category: '学习', icon: '🧪', name: '试管', nameEn: 'Test Tube' },
-		{ category: '自然', icon: '🌟', name: '五角星', nameEn: 'Star' },
-		{ category: '自然', icon: '🌙', name: '月亮', nameEn: 'Moon' },
-		{ category: '自然', icon: '☀️', name: '太阳', nameEn: 'Sun' },
-		{ category: '自然', icon: '🌈', name: '彩虹', nameEn: 'Rainbow' },
-		{ category: '自然', icon: '🌺', name: '芙蓉花', nameEn: 'Hibiscus' },
-		{ category: '自然', icon: '🌸', name: '樱花', nameEn: 'Cherry Blossom' },
-		{ category: '心情', icon: '❤️', name: '红心', nameEn: 'Red Heart' },
-		{ category: '心情', icon: '💜', name: '紫心', nameEn: 'Purple Heart' },
-		{ category: '心情', icon: '💙', name: '蓝心', nameEn: 'Blue Heart' },
-		{ category: '心情', icon: '💚', name: '绿心', nameEn: 'Green Heart' },
-		{ category: '心情', icon: '🧡', name: '橙心', nameEn: 'Orange Heart' },
-		{ category: '心情', icon: '💛', name: '黄心', nameEn: 'Yellow Heart' },
-		{ category: '心情', icon: '🩷', name: '粉心', nameEn: 'Pink Heart' },
-		{ category: '心情', icon: '🖤', name: '黑心', nameEn: 'Black Heart' },
-		{ category: '食物', icon: '☕', name: '咖啡', nameEn: 'Coffee' },
-		{ category: '食物', icon: '🍵', name: '茶杯', nameEn: 'Tea' },
-		{ category: '食物', icon: '🍕', name: '披萨', nameEn: 'Pizza' },
-		{ category: '食物', icon: '🍔', name: '汉堡', nameEn: 'Burger' },
-		{ category: '食物', icon: '🍜', name: '面条', nameEn: 'Noodle' },
-		{ category: '食物', icon: '🍣', name: '寿司', nameEn: 'Sushi' },
-		{ category: '食物', icon: '🍰', name: '蛋糕', nameEn: 'Cake' },
-		{ category: '交通', icon: '✈️', name: '飞机', nameEn: 'Airplane' },
-		{ category: '交通', icon: '🚗', name: '汽车', nameEn: 'Car' },
-		{ category: '交通', icon: '🚕', name: '出租车', nameEn: 'Taxi' },
-		{ category: '交通', icon: '🚲', name: '自行车', nameEn: 'Bicycle' },
-		{ category: '交通', icon: '🚀', name: '火箭', nameEn: 'Rocket' },
-		{ category: '物品', icon: '💼', name: '公文包', nameEn: 'Briefcase' },
-		{ category: '物品', icon: '📌', name: '图钉', nameEn: 'Pushpin' },
-		{ category: '物品', icon: '🏆', name: '奖杯', nameEn: 'Trophy' },
-		{ category: '物品', icon: '🎁', name: '礼物', nameEn: 'Gift' },
-		{ category: '物品', icon: '👑', name: '皇冠', nameEn: 'Crown' },
-		{ category: '人物', icon: '👤', name: '人', nameEn: 'Person' },
-		{ category: '人物', icon: '👥', name: '两个人', nameEn: 'People' },
-		{ category: '人物', icon: '👨', name: '男人', nameEn: 'Man' },
-		{ category: '人物', icon: '👩', name: '女人', nameEn: 'Woman' },
-		{ category: '动物', icon: '🐱', name: '猫', nameEn: 'Cat' },
-		{ category: '动物', icon: '🐶', name: '狗', nameEn: 'Dog' },
-		{ category: '动物', icon: '🐼', name: '熊猫', nameEn: 'Panda' },
-		{ category: '动物', icon: '🦊', name: '狐狸', nameEn: 'Fox' },
-		{ category: '动物', icon: '🐰', name: '兔子', nameEn: 'Rabbit' },
-		{ category: '动物', icon: '🦋', name: '蝴蝶', nameEn: 'Butterfly' },
-		{ category: '动物', icon: '🐝', name: '蜜蜂', nameEn: 'Bee' },
-		{ category: '动物', icon: '🐢', name: '乌龟', nameEn: 'Turtle' },
-	];
+	private emojiCategories: EmojiCategory[] = defaultEmojiCategories;
 
 	constructor(app: App, callbacks: IconPickerCallbacks) {
 		super(app);
 		this.callbacks = callbacks;
 		this.recentManager = new RecentIconsManager();
+	}
 
-		// 构建 emoji 名称映射
-		this.emojiItems.forEach(item => {
-			this.emojiNameMap.set(item.icon, item.name);
-			// 同时存储英文名用于搜索
-			this.emojiNameMap.set(item.nameEn.toLowerCase(), item.icon);
-		});
+	private async loadExternalIcons(): Promise<void> {
+		try {
+			const jsonPath = 'templates/icons.json';
+			const jsonFile = this.app.vault.getAbstractFileByPath(jsonPath);
+			if (jsonFile instanceof TFile) {
+				const content = await this.app.vault.read(jsonFile);
+				const parsed = JSON.parse(content) as EmojiCategory[];
+				if (Array.isArray(parsed) && parsed.length > 0) {
+					this.emojiCategories = parsed;
+					console.log('成功加载外部图标(JSON)，共', this.emojiCategories.length, '个分类');
+					return;
+				}
+			}
+
+			const jsPath = 'templates/icons.js';
+			const jsFile = this.app.vault.getAbstractFileByPath(jsPath);
+			if (jsFile instanceof TFile) {
+				const content = await this.app.vault.read(jsFile);
+				const arrayMatch = content.match(/export\s+const\s+emojiCategories\s*=\s*(\[[\s\S]*?\])\s*;/);
+				if (arrayMatch) {
+					const parsed = new Function('return ' + arrayMatch[1])() as EmojiCategory[];
+					if (Array.isArray(parsed) && parsed.length > 0) {
+						this.emojiCategories = parsed;
+						return;
+					}
+				}
+			}
+		} catch (e) {
+			console.log('加载外部图标失败:', e);
+		}
 	}
 
 	async onOpen(): Promise<void> {
@@ -134,6 +71,46 @@ export class IconPickerModal extends Modal {
 
 		this.tabsContainer = contentEl.createDiv('icon-picker-tabs');
 		this.createTabs();
+
+		// 添加手动输入区域
+		const inputArea = contentEl.createDiv('icon-picker-input-area');
+		const customInput = inputArea.createEl('input', {
+			attr: { type: 'text', placeholder: '输入任意emoji图标，如 😊 🎉 ✨' },
+			cls: 'icon-picker-custom-input'
+		});
+		const useBtn = inputArea.createEl('button', {
+			text: '使用',
+			cls: 'icon-picker-use-btn'
+		});
+
+		useBtn.addEventListener('click', () => {
+			const value = customInput.value.trim();
+			if (value) {
+				this.recentManager.add(value, false);
+				this.callbacks.onSelect(value);
+				this.close();
+			}
+		});
+
+		customInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				useBtn.click();
+			}
+		});
+
+		// 实时预览输入的图标
+		customInput.addEventListener('input', () => {
+			const preview = inputArea.querySelector('.icon-picker-input-preview');
+			if (preview) {
+				preview.remove();
+			}
+			const value = customInput.value.trim();
+			if (value) {
+				const previewEl = inputArea.createDiv('icon-picker-input-preview');
+				previewEl.textContent = value;
+				previewEl.style.cssText = 'font-size: 48px; text-align: center; margin-top: 8px;';
+			}
+		});
 
 		const hint = contentEl.createDiv('icon-picker-hint');
 		hint.textContent = '点击图标选择 | 按 Tab 切换标签页 | Esc 关闭';
@@ -151,6 +128,7 @@ export class IconPickerModal extends Modal {
 
 		contentEl.addEventListener('keydown', (e) => this.handleKeydown(e));
 
+		await this.loadExternalIcons();
 		await this.loadAndRender();
 	}
 
@@ -161,7 +139,7 @@ export class IconPickerModal extends Modal {
 			{ id: 'custom', label: '自定义图标' }
 		];
 
-		tabs.forEach((tab, index) => {
+		tabs.forEach((tab) => {
 			const btn = this.tabsContainer.createEl('button', {
 				text: tab.label,
 				cls: this.currentTab === tab.id ? 'active' : ''
@@ -177,15 +155,6 @@ export class IconPickerModal extends Modal {
 			btn.classList.toggle('active', (btn as HTMLElement).dataset.tabId === tab);
 		});
 		this.loadAndRender();
-	}
-
-	private getTabLabel(tab: string): string {
-		const labels: Record<string, string> = {
-			recent: '最近使用',
-			emoji: '系统图标',
-			custom: '自定义图标'
-		};
-		return labels[tab] || tab;
 	}
 
 	private async loadAndRender(): Promise<void> {
@@ -222,6 +191,21 @@ export class IconPickerModal extends Modal {
 		}
 	}
 
+	private getAllEmojiIcons(): EmojiIcon[] {
+		return this.emojiCategories.flatMap(cat => cat.icons);
+	}
+
+	private getEmojiNameMap(): Map<string, string> {
+		const map = new Map<string, string>();
+		this.emojiCategories.forEach(cat => {
+			cat.icons.forEach(item => {
+				map.set(item.icon, item.name);
+				map.set(item.nameEn.toLowerCase(), item.icon);
+			});
+		});
+		return map;
+	}
+
 	private renderRecentTab(): void {
 		const searchInput = this.contentArea.createEl('input', {
 			attr: { type: 'text', placeholder: '输入图标搜索...' },
@@ -233,18 +217,15 @@ export class IconPickerModal extends Modal {
 		const render = (filter: string = '') => {
 			grid.empty();
 			const recentIcons = this.recentManager.getRecent(50);
+			const nameMap = this.getEmojiNameMap();
 
 			const filtered = filter
 				? recentIcons.filter(item => {
 					const searchText = filter.toLowerCase();
-					// 系统图标：匹配 emoji、名称或英文名
 					if (!item.isCustom) {
-						const emojiItem = this.emojiItems.find(e => e.icon === item.icon);
-						const name = emojiItem?.name || '';
-						const nameEn = emojiItem?.nameEn.toLowerCase() || '';
-						return item.icon.includes(searchText) || name.toLowerCase().includes(searchText) || nameEn.includes(searchText);
+						const name = nameMap.get(item.icon) || '';
+						return item.icon.includes(searchText) || name.toLowerCase().includes(searchText);
 					}
-					// 自定义图标：匹配路径中的文件名
 					if (item.isCustom) {
 						const fileName = item.icon.split('/').pop() || item.icon;
 						return fileName.toLowerCase().includes(searchText) || item.icon.toLowerCase().includes(searchText);
@@ -260,7 +241,6 @@ export class IconPickerModal extends Modal {
 				return;
 			}
 
-			// 分组：系统图标 和 自定义图标
 			const systemIcons = filtered.filter(item => !item.isCustom);
 			const customIconsGroup = filtered.filter(item => item.isCustom);
 
@@ -271,9 +251,7 @@ export class IconPickerModal extends Modal {
 				systemIcons.forEach(item => {
 					const itemEl = itemsContainer.createDiv('icon-picker-item');
 					itemEl.textContent = item.icon;
-					const emojiItem = this.emojiItems.find(e => e.icon === item.icon);
-					const iconName = emojiItem ? `${emojiItem.name} / ${emojiItem.nameEn}` : item.icon;
-					itemEl.title = iconName;
+					itemEl.title = item.icon;
 					itemEl.addEventListener('click', () => {
 						this.callbacks.onSelect(item.icon);
 						this.close();
@@ -316,24 +294,24 @@ export class IconPickerModal extends Modal {
 		const render = (filter: string = '') => {
 			grid.empty();
 
-			const grouped = new Map<string, EmojiItem[]>();
-			for (const item of this.emojiItems) {
-				const matches = !filter || item.name.toLowerCase().includes(filter.toLowerCase());
+			const grouped = new Map<string, EmojiIcon[]>();
+			for (const cat of this.emojiCategories) {
+				const matches = !filter || cat.icons.some(item =>
+					item.name.toLowerCase().includes(filter.toLowerCase()) ||
+					item.nameEn.toLowerCase().includes(filter.toLowerCase())
+				);
 				if (matches) {
-					if (!grouped.has(item.category)) {
-						grouped.set(item.category, []);
-					}
-					grouped.get(item.category)!.push(item);
+					grouped.set(cat.category, cat.icons);
 				}
 			}
 
-			for (const [category, items] of grouped) {
+			for (const [category, icons] of grouped) {
 				const section = grid.createDiv('icon-picker-category');
 				const titleEl = section.createDiv('icon-picker-category-title');
 				titleEl.textContent = category;
 
 				const itemsContainer = section.createDiv('icon-picker-category-items');
-				items.forEach(item => {
+				icons.forEach(item => {
 					const itemEl = itemsContainer.createDiv('icon-picker-item');
 					itemEl.textContent = item.icon;
 					itemEl.title = item.name;
@@ -385,6 +363,181 @@ export class IconPickerModal extends Modal {
 		});
 
 		const grid = this.contentArea.createDiv('icon-picker-grid');
+
+		// 上传按钮
+		const uploadArea = grid.createDiv('icon-picker-upload-area');
+		const uploadBtn = uploadArea.createEl('button', {
+			text: '上传图片作为图标',
+			cls: 'icon-picker-upload-btn'
+		});
+		const fileInput = uploadArea.createEl('input', {
+			attr: { type: 'file', accept: 'image/*', multiple: 'multiple', style: 'display: none' }
+		});
+
+		// 上传确认区域（隐藏直到选择文件）
+		const uploadConfirmArea = uploadArea.createDiv('icon-picker-upload-confirm');
+		uploadConfirmArea.style.cssText = 'display: none; margin-top: 12px; padding: 12px; background: var(--background-secondary); border-radius: 6px;';
+
+		uploadBtn.addEventListener('click', () => {
+			fileInput.click();
+		});
+
+		fileInput.addEventListener('change', async () => {
+			const files = (fileInput as HTMLInputElement).files;
+			if (!files || files.length === 0) return;
+
+			// 显示确认区域，隐藏上传按钮
+			uploadConfirmArea.style.display = 'block';
+			uploadBtn.style.display = 'none';
+
+			// 清空并重建确认区域
+			uploadConfirmArea.empty();
+
+			const file = files[0];
+			const defaultName = file.name.replace(/\.[^.]+$/, '');
+
+			uploadConfirmArea.createDiv('icon-picker-upload-hint').textContent = `已选择: ${file.name}`;
+
+			const nameInput = uploadConfirmArea.createEl('input', {
+				attr: { type: 'text', placeholder: '输入图标名称', value: defaultName },
+				cls: 'icon-picker-upload-name-input'
+			});
+			nameInput.style.cssText = 'width: 100%; margin: 8px 0; padding: 6px 8px;';
+
+			const btnRow = uploadConfirmArea.createDiv('icon-picker-upload-btn-row');
+			btnRow.style.cssText = 'display: flex; gap: 8px;';
+
+			const confirmAndUseBtn = btnRow.createEl('button', {
+				text: '上传并使用',
+				cls: 'icon-picker-upload-use-btn'
+			});
+			confirmAndUseBtn.style.cssText = 'flex: 1; padding: 6px 12px;';
+
+			const confirmBtn = btnRow.createEl('button', {
+				text: '上传',
+				cls: 'icon-picker-upload-confirm-btn'
+			});
+			confirmBtn.style.cssText = 'flex: 1; padding: 6px 12px;';
+
+			const cancelBtn = btnRow.createEl('button', {
+				text: '取消',
+				cls: 'icon-picker-upload-cancel-btn'
+			});
+			cancelBtn.style.cssText = 'flex: 1; padding: 6px 12px;';
+
+			confirmAndUseBtn.addEventListener('click', async () => {
+				const iconName = nameInput.value.trim() || defaultName;
+
+				// 确保 icon 文件夹存在
+				let iconFolder = this.app.vault.getFolderByPath('icon');
+				if (!iconFolder) {
+					try {
+						await this.app.vault.createFolder('icon');
+						iconFolder = this.app.vault.getFolderByPath('icon');
+					} catch (e) {
+						new Notice('创建 icon 文件夹失败');
+						return;
+					}
+				}
+
+				const ext = file.name.match(/\.([^.]+)$/)?.[1] || 'png';
+				const newPath = `icon/${iconName}.${ext}`;
+
+				// 检查文件是否已存在
+				const existingFile = this.app.vault.getAbstractFileByPath(newPath);
+				if (existingFile instanceof TFile) {
+					if (!confirm(`文件 "${iconName}.${ext}" 已存在，是否覆盖?`)) {
+						resetUploadArea();
+						return;
+					}
+					await this.app.vault.delete(existingFile);
+				}
+
+				try {
+					const arrayBuffer = await file.arrayBuffer();
+					const uint8Array = new Uint8Array(arrayBuffer);
+					const createdFile = await this.app.vault.createBinary(newPath, uint8Array);
+
+					console.log('[IconPicker] 上传成功，触发 create 事件:', newPath);
+
+					// 触发 create 事件，让 DragDropTree 的监听器收到通知
+					this.app.vault.trigger('create', createdFile);
+
+					this.recentManager.add(newPath, true);
+					this.callbacks.onFileCreated?.(newPath);
+					console.log('[IconPicker] onFileCreated 回调完成');
+					this.callbacks.onSelect(newPath);
+					console.log('[IconPicker] onSelect 回调完成，即将关闭弹窗');
+					this.close();
+				} catch (e) {
+					console.error('上传失败:', e);
+					new Notice('上传失败');
+				}
+
+				resetUploadArea();
+			});
+
+			confirmBtn.addEventListener('click', async () => {
+				const iconName = nameInput.value.trim() || defaultName;
+
+				// 确保 icon 文件夹存在
+				let iconFolder = this.app.vault.getFolderByPath('icon');
+				if (!iconFolder) {
+					try {
+						await this.app.vault.createFolder('icon');
+						iconFolder = this.app.vault.getFolderByPath('icon');
+					} catch (e) {
+						new Notice('创建 icon 文件夹失败');
+						return;
+					}
+				}
+
+				const ext = file.name.match(/\.([^.]+)$/)?.[1] || 'png';
+				const newPath = `icon/${iconName}.${ext}`;
+
+				// 检查文件是否已存在
+				const existingFile = this.app.vault.getAbstractFileByPath(newPath);
+				if (existingFile instanceof TFile) {
+					if (!confirm(`文件 "${iconName}.${ext}" 已存在，是否覆盖?`)) {
+						resetUploadArea();
+						return;
+					}
+					await this.app.vault.delete(existingFile);
+				}
+
+				try {
+					const arrayBuffer = await file.arrayBuffer();
+					const uint8Array = new Uint8Array(arrayBuffer);
+					const createdFile = await this.app.vault.createBinary(newPath, uint8Array);
+
+					console.log('[IconPicker] 上传成功:', newPath);
+
+					// 触发 create 事件
+					this.app.vault.trigger('create', createdFile);
+
+					new Notice(`成功上传: ${iconName}.${ext}`);
+
+					await this.loadCustomIcons();
+					this.renderCustomTabWithFiles([newPath]);
+				} catch (e) {
+					console.error('上传失败:', e);
+					new Notice('上传失败');
+				}
+
+				resetUploadArea();
+			});
+
+			cancelBtn.addEventListener('click', () => {
+				resetUploadArea();
+			});
+
+			function resetUploadArea() {
+				uploadConfirmArea.style.display = 'none';
+				uploadBtn.style.display = 'inline-block';
+				fileInput.value = '';
+			}
+		});
+
 		const customGrid = grid.createDiv('icon-picker-custom-grid');
 
 		const render = (filter: string = '') => {
@@ -396,7 +549,7 @@ export class IconPickerModal extends Modal {
 
 			if (filtered.length === 0) {
 				customGrid.createDiv('icon-picker-empty', (el) => {
-					el.textContent = filter ? '未找到匹配的文件' : '未找到自定义图标。请在 vault 中创建 icon 文件夹并放入图片文件';
+					el.textContent = filter ? '未找到匹配的文件' : '未找到自定义图标。请上传图片或放入 icon 文件夹';
 				});
 				return;
 			}
@@ -415,8 +568,49 @@ export class IconPickerModal extends Modal {
 			});
 		};
 
+		// 保存 render 函数引用，以便后续刷新
+		(this as any)._renderCustomGrid = render;
 		render();
 		searchInput.addEventListener('input', () => render(searchInput.value.trim()));
+	}
+
+	// 刷新自定义图标列表（上传后调用）
+	private renderCustomTabWithFiles(newPaths: string[]): void {
+		const grid = this.contentArea.querySelector('.icon-picker-grid');
+		if (!grid) return;
+
+		const customGrid = grid.querySelector('.icon-picker-custom-grid');
+		if (!customGrid) return;
+
+		// 清空并重新渲染
+		customGrid.empty();
+		const filtered = this.customIcons;
+
+		if (filtered.length === 0) {
+			customGrid.createDiv('icon-picker-empty', (el) => {
+				el.textContent = '未找到自定义图标。请上传图片或放入 icon 文件夹';
+			});
+			return;
+		}
+
+		filtered.forEach((icon, index) => {
+			const item = customGrid.createDiv('icon-picker-item icon-picker-custom');
+			const file = this.app.vault.getAbstractFileByPath(icon.path);
+			const imgSrc = file instanceof TFile ? this.app.vault.getResourcePath(file) : icon.path;
+			item.createEl('img', { attr: { src: imgSrc, alt: icon.name } });
+			item.title = icon.name;
+
+			// 新上传的图标高亮显示
+			if (newPaths.includes(icon.path)) {
+				item.style.boxShadow = '0 0 0 2px var(--text-accent)';
+			}
+
+			item.addEventListener('click', () => {
+				this.recentManager.add(icon.path, true);
+				this.callbacks.onSelect(icon.path);
+				this.close();
+			});
+		});
 	}
 
 	onClose(): void {
