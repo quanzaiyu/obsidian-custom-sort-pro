@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"npm run build 2>&1\",\"description\":\"Build to verify changes\"}",
-  "error": "Exit code 1\n\n> obsidian-custom-sort@3.1.7 build\n> node esbuild.config.mjs production --entry=src/main.ts --out=dist/main.js\n\nCopied manifest.json\nCopied icons.json\nBuilding main.js...\n✘ [ERROR] Expected identifier but found \")\"\n\n    src/IconPickerModal.ts:542:3:\n      542 │     });\n          ╵      ^\n\n1 error",
-  "timestamp": "2026-05-30T03:18:44.546Z",
-  "retry_count": 1
-}

@@ -1,4 +1,4 @@
-import { App, TFile, TFolder, Notice, Menu, setIcon } from 'obsidian';
+import { App, TFile, TFolder, Notice, Menu, setIcon, EventRef } from 'obsidian';
 import type { TreeNode } from './types';
 import { SortSpecManager } from './SortSpecManager';
 import { IconPickerModal } from './IconPickerModal';
@@ -17,6 +17,11 @@ export class DragDropTree {
 	private dropMode: 'before' | 'after' | 'folder' | null = null;
 	private onIconChange?: (node: TreeNode, icon: string | undefined) => void;
 	private initialized: boolean = false;
+	private vaultEventRefs: EventRef[] = [];
+	private isRefreshing: boolean = false;
+	private pendingRefresh: boolean = false;
+	private dragOperationInProgress: boolean = false;
+	private dragRefreshDepth: number = 0;
 
 	constructor(app: App, container: HTMLElement, onIconChange?: (node: TreeNode, icon: string | undefined) => void) {
 		this.app = app;
@@ -26,33 +31,120 @@ export class DragDropTree {
 	}
 
 	async init(): Promise<void> {
+		// 清理旧的事件监听器，防止重复注册
+		this.unregisterVaultListeners();
+
 		await this.buildTree();
 		this.render();
 		this.registerVaultListener();
 		this.initialized = true;
 	}
 
+	private unregisterVaultListeners(): void {
+		for (const ref of this.vaultEventRefs) {
+			this.app.vault.offref(ref);
+		}
+		this.vaultEventRefs = [];
+	}
+
 	private registerVaultListener(): void {
-		this.app.vault.on('delete', (file: TAbstractFile) => {
-			console.log('[DragDropTree] delete 事件触发:', file.path);
-			this.refreshFolderChildren(file.path);
-		});
-		this.app.vault.on('create', (file: TAbstractFile) => {
-			console.log('[DragDropTree] create 事件触发:', file.path);
-			this.refreshFolderChildren(file.path);
-		});
-		this.app.vault.on('rename', (file: TAbstractFile, oldPath: string) => {
-			console.log('[DragDropTree] rename 事件触发:', oldPath, '->', file.path);
-			this.refreshFolderChildren(file.path);
-		});
+		// 使用带防抖的刷新，避免短时间内多次触发
+		let refreshTimeout: number | null = null;
+		const debouncedReload = () => {
+			if (refreshTimeout) {
+				clearTimeout(refreshTimeout);
+			}
+			refreshTimeout = window.setTimeout(() => {
+				refreshTimeout = null;
+				// 拖拽操作期间跳过 modify 刷新
+				if (!this.dragOperationInProgress) {
+					this.reload();
+				}
+			}, 100);
+		};
+
+		const clearDebouncedTimeout = () => {
+			if (refreshTimeout) {
+				clearTimeout(refreshTimeout);
+				refreshTimeout = null;
+			}
+		};
+
+		this.vaultEventRefs.push(
+			this.app.vault.on('delete', (file: TAbstractFile) => {
+				console.log('[DragDropTree] delete 事件触发:', file.path);
+				// 拖拽操作期间跳过刷新
+				if (this.dragOperationInProgress) {
+					console.log('[DragDropTree] 跳过 delete 刷新，拖拽操作进行中');
+					return;
+				}
+				clearDebouncedTimeout();
+				this.refreshFolderChildren(file.path);
+			})
+		);
+
+		this.vaultEventRefs.push(
+			this.app.vault.on('create', (file: TAbstractFile) => {
+				console.log('[DragDropTree] create 事件触发:', file.path);
+				if (this.dragOperationInProgress) {
+					console.log('[DragDropTree] 跳过 create 刷新，拖拽操作进行中');
+					return;
+				}
+				clearDebouncedTimeout();
+				this.refreshFolderChildren(file.path);
+			})
+		);
+
+		this.vaultEventRefs.push(
+			this.app.vault.on('rename', (file: TAbstractFile, oldPath: string) => {
+				console.log('[DragDropTree] rename 事件触发:', oldPath, '->', file.path);
+				if (this.dragOperationInProgress) {
+					console.log('[DragDropTree] 跳过 rename 刷新，拖拽操作进行中');
+					return;
+				}
+				clearDebouncedTimeout();
+				this.refreshFolderChildren(file.path);
+			})
+		);
+
+		this.vaultEventRefs.push(
+			this.app.vault.on('modify', debouncedReload)
+		);
 	}
 
 	private async reload(): Promise<void> {
+		// 防止并发刷新
+		if (this.isRefreshing) {
+			console.log('[DragDropTree] reload 跳过，正在刷新中');
+			this.pendingRefresh = true;
+			return;
+		}
+
+		// 拖拽操作期间跳过 reload，但记录一次
+		if (this.dragOperationInProgress) {
+			console.log('[DragDropTree] reload 跳过，拖拽操作进行中，计数+1');
+			this.dragRefreshDepth++;
+			return;
+		}
+
+		this.isRefreshing = true;
 		console.log('[DragDropTree] reload 开始');
-		await this.buildTree();
-		console.log('[DragDropTree] buildTree 完成');
-		this.refreshTreeInPlace();
-		console.log('[DragDropTree] refreshTreeInPlace 完成');
+
+		try {
+			await this.buildTree();
+			console.log('[DragDropTree] buildTree 完成');
+			this.refreshTreeInPlace();
+			console.log('[DragDropTree] refreshTreeInPlace 完成');
+		} finally {
+			this.isRefreshing = false;
+
+			// 如果在刷新期间有新的刷新请求，立即处理
+			if (this.pendingRefresh) {
+				console.log('[DragDropTree] 处理 pending refresh');
+				this.pendingRefresh = false;
+				this.reload();
+			}
+		}
 	}
 
 	// 增量更新：只更新变化的节点，不清空整个 DOM
@@ -98,18 +190,18 @@ export class DragDropTree {
 
 				// 如果文件夹已展开且有子节点
 				if (node.type === 'folder' && node.expanded && node.hasChildren && node.children && node.children.length > 0) {
+					// 查找或创建子容器
 					let childrenEl = oldEl.querySelector(':scope + .sort-gui-tree-children') as HTMLElement;
 					if (!childrenEl) {
 						// 没有子容器，在 oldEl 后面创建
 						childrenEl = createDiv('sort-gui-tree-children');
 						childrenEl.dataset.parentId = node.id;
-						// 渲染子节点
-						this.renderNodes(node.children, childrenEl);
 						// 插入到 oldEl 后面
 						oldEl.after(childrenEl);
 					}
-					// 递归更新子节点，传递新的 existingPaths
-					this.updateTreeNodesInPlace(childrenEl, node.children, oldElements, existingPaths);
+					// 清空后重新渲染子节点，确保没有重复
+					childrenEl.empty();
+					this.renderNodes(node.children, childrenEl);
 				}
 			} else {
 				// 新节点，插入到正确位置
@@ -331,6 +423,9 @@ export class DragDropTree {
 
 		this.tree = this.buildNodesFromFolder(root);
 		console.log('[DragDropTree] tree 节点数:', this.tree.length);
+
+		// 递归加载已展开的子文件夹内容，恢复展开状态
+		await this.loadExpandedSubfolders(this.tree);
 	}
 
 	private async loadAllSubfolderSortSpecs(folder: TFolder): Promise<void> {
@@ -969,18 +1064,34 @@ tags: [excalidraw]
 
 		this.clearDropIndicators();
 
-		if (this.dropMode === 'folder' && targetNode.type === 'folder') {
-			await this.moveIntoFolder(this.dragNode, targetNode);
-			return;
-		}
+		// 标记拖拽操作进行中，阻止 vault 事件触发刷新
+		this.dragOperationInProgress = true;
 
-		const sourcePath = this.getParentPath(this.dragNode.path);
-		const targetPath = this.getParentPath(targetNode.path);
+		try {
+			if (this.dropMode === 'folder' && targetNode.type === 'folder') {
+				await this.moveIntoFolder(this.dragNode, targetNode);
+			} else {
+				const sourcePath = this.getParentPath(this.dragNode.path);
+				const targetPath = this.getParentPath(targetNode.path);
 
-		if (sourcePath === targetPath) {
-			await this.reorderInSameFolder(this.dragNode, targetNode, this.dropMode === 'after' ? 'after' : 'before');
-		} else {
-			await this.moveToAnotherFolder(this.dragNode, targetNode, this.dropMode === 'after' ? 'after' : 'before');
+				if (sourcePath === targetPath) {
+					await this.reorderInSameFolder(this.dragNode, targetNode, this.dropMode === 'after' ? 'after' : 'before');
+				} else {
+					await this.moveToAnotherFolder(this.dragNode, targetNode, this.dropMode === 'after' ? 'after' : 'before');
+				}
+			}
+		} finally {
+			// 操作完成后，重新构建 tree，然后刷新 DOM
+			await this.buildTree();
+			this.refreshTreeInPlace();
+
+			// 延迟重置标志，等待 vault 事件触发 reload
+			// 这样 reload 会重新构建完整的 tree（包括加载展开的子文件夹内容）
+			setTimeout(() => {
+				this.dragRefreshDepth = 0;
+				this.dragOperationInProgress = false;
+				console.log('[DragDropTree] 拖拽操作标志已重置');
+			}, 500);
 		}
 	}
 
@@ -1006,7 +1117,7 @@ tags: [excalidraw]
 
 			new Notice(`已将 "${dragNode.name}" 移动到 "${targetFolder.name}"`);
 
-			// 增量更新：只更新涉及的排序映射
+			// 增量更新排序映射
 			const sourceSpec = await this.sortSpecManager.load(sourcePath);
 			const targetSpec = await this.sortSpecManager.load(targetFolder.path);
 			if (sourceSpec) {
@@ -1016,14 +1127,47 @@ tags: [excalidraw]
 				this.updateSortMapInMemory(targetFolder.path, targetSpec.sortingSpec, targetSpec.customIcons);
 			}
 
+			// 确保目标文件夹展开
 			targetFolder.expanded = true;
 			this.expandedPaths.add(targetFolder.path);
-
-			// 增量刷新：刷新源目录和目标目录
-			this.refreshFolderChildren(dragNode.path); // 原路径，用于触发刷新
-			await this.refreshFolderChildren(newPath);
 		} catch (error) {
 			new Notice('移动失败: ' + (error as Error).message);
+		}
+	}
+
+	// 更新 tree 结构以反映移动操作
+	private updateTreeForMove(dragNode: TreeNode, targetFolder: TreeNode, newPath: string): void {
+		// 更新 dragNode 的路径和位置
+		dragNode.path = newPath;
+		dragNode.id = newPath;
+		dragNode.type = dragNode.type; // 类型不变
+
+		// 从源父节点移除
+		const sourceParentPath = this.getParentPath(newPath);
+		const sourceParent = this.findNodeByPath(sourceParentPath, this.tree);
+		if (sourceParent && sourceParent.children) {
+			const idx = sourceParent.children.findIndex(n => n.id === dragNode.id);
+			if (idx !== -1) {
+				sourceParent.children.splice(idx, 1);
+			}
+		}
+
+		// 如果目标文件夹在 tree 中，直接添加
+		const targetNode = this.findNodeByPath(targetFolder.path, this.tree);
+		if (targetNode) {
+			if (!targetNode.children) {
+				targetNode.children = [];
+			}
+			targetNode.children.push(dragNode);
+			// 按排序重新排列
+			targetNode.children.sort((a, b) => {
+				if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
+					return a.sortOrder - b.sortOrder;
+				}
+				if (a.sortOrder !== undefined) return -1;
+				if (b.sortOrder !== undefined) return 1;
+				return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+			});
 		}
 	}
 
@@ -1105,9 +1249,15 @@ tags: [excalidraw]
 
 			new Notice(`已将 "${dragNode.name}" 移动到 "${targetPath === '/' ? '根目录' : targetPath}"`);
 
-			// 增量刷新：刷新源目录和目标目录
-			await this.refreshFolderChildren(sourcePath + '/'); // 触发源目录刷新
-			await this.refreshFolderChildren(targetPath + '/'); // 触发目标目录刷新
+			// 增量更新排序映射
+			const sourceSpec = await this.sortSpecManager.load(sourcePath);
+			const targetSpec = await this.sortSpecManager.load(targetPath);
+			if (sourceSpec) {
+				this.updateSortMapInMemory(sourcePath, sourceSpec.sortingSpec, sourceSpec.customIcons);
+			}
+			if (targetSpec) {
+				this.updateSortMapInMemory(targetPath, targetSpec.sortingSpec, targetSpec.customIcons);
+			}
 		} catch (error) {
 			new Notice('移动失败: ' + (error as Error).message);
 		}
@@ -1143,6 +1293,7 @@ tags: [excalidraw]
 	}
 
 	cleanup(): void {
+		this.unregisterVaultListeners();
 		this.tree = [];
 		this.clearDropIndicators();
 	}

@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1780023778189,
-  "projectRoot": "D:\\projects\\my_project\\obsidian-custom-sort-pro",
+  "lastScanned": 1780145385533,
+  "projectRoot": "D:\\Projects\\obsidian-custom-sort",
   "techStack": {
     "languages": [
       {
@@ -28,19 +28,17 @@
         "category": "build"
       }
     ],
-    "packageManager": "npm",
+    "packageManager": "yarn",
     "runtime": "Node.js 20.0.0"
   },
   "build": {
     "buildCommand": "npm run build 2>&1",
-    "testCommand": "npm test",
+    "testCommand": "yarn test",
     "lintCommand": null,
-    "devCommand": "npm run dev",
+    "devCommand": "yarn dev",
     "scripts": {
-      "dev": "node esbuild.config.mjs",
-      "dev:v2": "node esbuild.config.mjs --entry=src/main.ts --out=dist/main.js",
-      "build": "node esbuild.config.mjs production",
-      "build:v2": "node esbuild.config.mjs production --entry=src-v2/main.ts --out=dist/main.js",
+      "dev": "node esbuild.config.mjs --entry=src/main.ts --out=dist/main.js",
+      "build": "node esbuild.config.mjs production --entry=src/main.ts --out=dist/main.js",
       "typecheck": "tsc --noEmit --skipLibCheck",
       "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
     }
@@ -68,17 +66,19 @@
     "dist": {
       "path": "dist",
       "purpose": "Distribution/build output",
-      "fileCount": 1,
-      "lastAccessed": 1780023778089,
+      "fileCount": 3,
+      "lastAccessed": 1780145385482,
       "keyFiles": [
-        "main.js"
+        "icons.json",
+        "main.js",
+        "manifest.json"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 1,
-      "lastAccessed": 1780023778093,
+      "lastAccessed": 1780145385482,
       "keyFiles": [
         "完整的Obsidian文件管理器.md"
       ]
@@ -86,100 +86,34 @@
     "src": {
       "path": "src",
       "purpose": "Source code",
-      "fileCount": 8,
-      "lastAccessed": 1780023778138,
+      "fileCount": 11,
+      "lastAccessed": 1780145385510,
       "keyFiles": [
         "DragDropTree.ts",
         "IconPickerModal.ts",
-        "main.ts",
-        "MySortView.ts",
-        "RecentIconsManager.ts"
+        "icons.json",
+        "icons.ts",
+        "InputModal.ts"
       ]
     }
   },
   "hotPaths": [
     {
       "path": "src\\DragDropTree.ts",
-      "accessCount": 163,
-      "lastAccessed": 1780126140609,
-      "type": "file"
-    },
-    {
-      "path": "src\\IconPickerModal.ts",
-      "accessCount": 70,
-      "lastAccessed": 1780111144485,
-      "type": "file"
-    },
-    {
-      "path": "src\\SortSpecManager.ts",
-      "accessCount": 9,
-      "lastAccessed": 1780109380594,
-      "type": "file"
-    },
-    {
-      "path": "src\\InputModal.ts",
-      "accessCount": 5,
-      "lastAccessed": 1780060160514,
-      "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 5,
-      "lastAccessed": 1780098764792,
-      "type": "directory"
-    },
-    {
-      "path": "src",
-      "accessCount": 5,
-      "lastAccessed": 1780111267876,
-      "type": "directory"
-    },
-    {
-      "path": "src\\styles.css",
-      "accessCount": 5,
-      "lastAccessed": 1780126108644,
-      "type": "file"
-    },
-    {
-      "path": "src\\types.ts",
-      "accessCount": 4,
-      "lastAccessed": 1780110692791,
-      "type": "file"
-    },
-    {
-      "path": "src\\icons.ts",
-      "accessCount": 3,
-      "lastAccessed": 1780104409846,
-      "type": "file"
-    },
-    {
-      "path": "src\\main.ts",
-      "accessCount": 2,
-      "lastAccessed": 1780110342115,
+      "accessCount": 44,
+      "lastAccessed": 1780148851069,
       "type": "file"
     },
     {
       "path": "src\\MySortView.ts",
-      "accessCount": 2,
-      "lastAccessed": 1780110363989,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 2,
-      "lastAccessed": 1780126765805,
-      "type": "file"
-    },
-    {
-      "path": "manifest.json",
-      "accessCount": 2,
-      "lastAccessed": 1780126789257,
-      "type": "file"
-    },
-    {
-      "path": "src\\RecentIconsManager.ts",
       "accessCount": 1,
-      "lastAccessed": 1780107446596,
+      "lastAccessed": 1780145415312,
+      "type": "file"
+    },
+    {
+      "path": "src\\main.ts",
+      "accessCount": 1,
+      "lastAccessed": 1780145415338,
       "type": "file"
     }
   ],
