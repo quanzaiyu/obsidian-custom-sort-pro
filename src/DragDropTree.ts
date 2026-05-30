@@ -152,6 +152,16 @@ export class DragDropTree {
 		const treeEl = this.container?.querySelector('.sort-gui-tree');
 		if (!treeEl) return;
 
+		// 根目录特殊处理
+		if (parentPath === '/') {
+			await this.loadFolderSortSpec(this.app.vault.getRoot());
+			this.tree = this.buildNodesFromFolder(this.app.vault.getRoot());
+			// 恢复展开状态
+			this.restoreExpandedState();
+			this.refreshTreeInPlace();
+			return;
+		}
+
 		// 找到父目录对应的节点
 		const parentNode = this.findNodeByPath(parentPath, this.tree);
 		if (!parentNode) return;
@@ -172,8 +182,24 @@ export class DragDropTree {
 			existingChildrenEl.empty();
 			this.renderNodes(parentNode.children, existingChildrenEl as HTMLElement);
 		} else {
-			// 如果没有子容器，可能是根目录，直接刷新整个树
+			// 如果没有子容器，刷新整个树并恢复展开状态
+			await this.buildTree();
+			this.restoreExpandedState();
 			this.refreshTreeInPlace();
+		}
+	}
+
+	// 保存当前展开状态
+	private saveExpandedState(): string[] {
+		return Array.from(this.expandedPaths);
+	}
+
+	// 恢复展开状态
+	private restoreExpandedState(): void {
+		for (const node of this.tree) {
+			if (this.expandedPaths.has(node.path)) {
+				node.expanded = true;
+			}
 		}
 	}
 
@@ -886,10 +912,12 @@ tags: [excalidraw]
 
 			targetFolder.expanded = true;
 			this.expandedPaths.add(targetFolder.path);
-			this.refreshTreeInPlace();
+
+			// 增量刷新：刷新源目录和目标目录
+			this.refreshFolderChildren(dragNode.path); // 原路径，用于触发刷新
+			await this.refreshFolderChildren(newPath);
 		} catch (error) {
 			new Notice('移动失败: ' + (error as Error).message);
-			await this.reload();
 		}
 	}
 
@@ -970,10 +998,12 @@ tags: [excalidraw]
 			await this.sortSpecManager.addItem(targetPath, dragNode.name);
 
 			new Notice(`已将 "${dragNode.name}" 移动到 "${targetPath === '/' ? '根目录' : targetPath}"`);
-			await this.reload();
+
+			// 增量刷新：刷新源目录和目标目录
+			await this.refreshFolderChildren(sourcePath + '/'); // 触发源目录刷新
+			await this.refreshFolderChildren(targetPath + '/'); // 触发目标目录刷新
 		} catch (error) {
 			new Notice('移动失败: ' + (error as Error).message);
-			await this.reload();
 		}
 	}
 
