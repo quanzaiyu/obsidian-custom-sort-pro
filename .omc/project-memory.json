@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1780145385533,
-  "projectRoot": "D:\\Projects\\obsidian-custom-sort",
+  "lastScanned": 1780306751825,
+  "projectRoot": "d:\\projects\\my_project\\obsidian-custom-sort-pro",
   "techStack": {
     "languages": [
       {
@@ -28,14 +28,14 @@
         "category": "build"
       }
     ],
-    "packageManager": "yarn",
+    "packageManager": "npm",
     "runtime": "Node.js 20.0.0"
   },
   "build": {
-    "buildCommand": "npm run build 2>&1",
-    "testCommand": "yarn test",
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
     "lintCommand": null,
-    "devCommand": "yarn dev",
+    "devCommand": "npm run dev",
     "scripts": {
       "dev": "node esbuild.config.mjs --entry=src/main.ts --out=dist/main.js",
       "build": "node esbuild.config.mjs production --entry=src/main.ts --out=dist/main.js",
@@ -67,7 +67,7 @@
       "path": "dist",
       "purpose": "Distribution/build output",
       "fileCount": 3,
-      "lastAccessed": 1780145385482,
+      "lastAccessed": 1780306751727,
       "keyFiles": [
         "icons.json",
         "main.js",
@@ -78,7 +78,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 1,
-      "lastAccessed": 1780145385482,
+      "lastAccessed": 1780306751728,
       "keyFiles": [
         "完整的Obsidian文件管理器.md"
       ]
@@ -87,7 +87,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 11,
-      "lastAccessed": 1780145385510,
+      "lastAccessed": 1780306751779,
       "keyFiles": [
         "DragDropTree.ts",
         "IconPickerModal.ts",
@@ -100,20 +100,20 @@
   "hotPaths": [
     {
       "path": "src\\DragDropTree.ts",
-      "accessCount": 44,
-      "lastAccessed": 1780148851069,
-      "type": "file"
-    },
-    {
-      "path": "src\\MySortView.ts",
-      "accessCount": 1,
-      "lastAccessed": 1780145415312,
+      "accessCount": 56,
+      "lastAccessed": 1780307091076,
       "type": "file"
     },
     {
       "path": "src\\main.ts",
-      "accessCount": 1,
-      "lastAccessed": 1780145415338,
+      "accessCount": 3,
+      "lastAccessed": 1780307012890,
+      "type": "file"
+    },
+    {
+      "path": "src\\MySortView.ts",
+      "accessCount": 3,
+      "lastAccessed": 1780307022015,
       "type": "file"
     }
   ],

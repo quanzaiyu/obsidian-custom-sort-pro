@@ -1,11 +1,17 @@
 import { Plugin, Notice, WorkspaceLeaf, Platform } from 'obsidian';
 import { MySortView, MY_SORT_VIEW_TYPE } from './MySortView';
 
+const EXPANDED_PATHS_KEY = 'expanded-paths';
+
 export default class CustomSortV2Plugin extends Plugin {
 	private ribbonIconEl: HTMLElement | null = null;
+	private expandedPaths: Set<string> = new Set();
 
 	async onload(): Promise<void> {
-		this.registerView(MY_SORT_VIEW_TYPE, (leaf) => new MySortView(leaf));
+		// 加载保存的展开状态
+		await this.loadExpandedPaths();
+
+		this.registerView(MY_SORT_VIEW_TYPE, (leaf) => new MySortView(leaf, this));
 
 		// 添加 Ribbon 图标（仅桌面端）
 		if (Platform.isDesktop) {
@@ -36,6 +42,51 @@ export default class CustomSortV2Plugin extends Plugin {
 		});
 	}
 
+	private async loadExpandedPaths(): Promise<void> {
+		try {
+			const data = await this.loadData();
+			if (data && data[EXPANDED_PATHS_KEY] && Array.isArray(data[EXPANDED_PATHS_KEY])) {
+				this.expandedPaths = new Set(data[EXPANDED_PATHS_KEY]);
+			}
+		} catch (error) {
+			console.error('加载展开状态失败:', error);
+		}
+	}
+
+	async saveExpandedPaths(): Promise<void> {
+		try {
+			const data = { [EXPANDED_PATHS_KEY]: Array.from(this.expandedPaths) };
+			await this.saveData(data);
+		} catch (error) {
+			console.error('保存展开状态失败:', error);
+		}
+	}
+
+	getExpandedPaths(): Set<string> {
+		return this.expandedPaths;
+	}
+
+	updateExpandedPath(path: string, expanded: boolean): void {
+		if (expanded) {
+			this.expandedPaths.add(path);
+		} else {
+			this.expandedPaths.delete(path);
+		}
+		// 防抖保存
+		this.debouncedSave();
+	}
+
+	private saveTimeout: number | null = null;
+	private debouncedSave(): void {
+		if (this.saveTimeout) {
+			clearTimeout(this.saveTimeout);
+		}
+		this.saveTimeout = window.setTimeout(() => {
+			this.saveExpandedPaths();
+			this.saveTimeout = null;
+		}, 500);
+	}
+
 	private async openView(): Promise<void> {
 		let leaf: WorkspaceLeaf | undefined = this.app.workspace.getLeavesOfType(MY_SORT_VIEW_TYPE)[0];
 
@@ -52,6 +103,9 @@ export default class CustomSortV2Plugin extends Plugin {
 	}
 
 	async onunload(): Promise<void> {
+		// 关闭前保存状态
+		await this.saveExpandedPaths();
+
 		const leaves = this.app.workspace.getLeavesOfType(MY_SORT_VIEW_TYPE);
 		for (const leaf of leaves) {
 			await leaf.detach();

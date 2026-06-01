@@ -3,10 +3,12 @@ import type { TreeNode } from './types';
 import { SortSpecManager } from './SortSpecManager';
 import { IconPickerModal } from './IconPickerModal';
 import { InputModal } from './InputModal';
+import type CustomSortV2Plugin from './main';
 
 export class DragDropTree {
 	private app: App;
 	private container: HTMLElement;
+	private plugin: CustomSortV2Plugin;
 	private tree: TreeNode[] = [];
 	private sortSpecManager: SortSpecManager;
 	private sortOrdersByFolder: Map<string, Map<string, number>> = new Map();
@@ -18,17 +20,26 @@ export class DragDropTree {
 	private onIconChange?: (node: TreeNode, icon: string | undefined) => void;
 	private initialized: boolean = false;
 	private vaultEventRefs: EventRef[] = [];
-	private isRefreshing: boolean = false;
-	private pendingRefresh: boolean = false;
-	private dragOperationInProgress: boolean = false;
-	private dragRefreshDepth: number = 0;
 
-	constructor(app: App, container: HTMLElement, onIconChange?: (node: TreeNode, icon: string | undefined) => void) {
+	constructor(app: App, container: HTMLElement, plugin: CustomSortV2Plugin) {
 		this.app = app;
 		this.container = container;
+		this.plugin = plugin;
 		this.sortSpecManager = new SortSpecManager(app);
-		this.onIconChange = onIconChange;
+		// 从插件加载已保存的展开状态
+		this.expandedPaths = new Set(this.plugin.getExpandedPaths());
 	}
+
+	// 保存当前状态到插件
+	saveState(): void {
+		this.plugin.saveExpandedPaths();
+	}
+
+	// 标记拖拽操作进行中
+	private dragOperationInProgress: boolean = false;
+	private dragRefreshDepth: number = 0;
+	private isRefreshing: boolean = false;
+	private pendingRefresh: boolean = false;
 
 	async init(): Promise<void> {
 		// 清理旧的事件监听器，防止重复注册
@@ -762,8 +773,10 @@ tags: [excalidraw]
 		node.expanded = !node.expanded;
 		if (node.expanded) {
 			this.expandedPaths.add(node.path);
+			this.plugin.updateExpandedPath(node.path, true);
 		} else {
 			this.expandedPaths.delete(node.path);
+			this.plugin.updateExpandedPath(node.path, false);
 		}
 		this.render();
 	}
@@ -777,6 +790,7 @@ tags: [excalidraw]
 				this.app.workspace.getLeaf(false).openFile(folderNote);
 				node.expanded = true;
 				this.expandedPaths.add(node.path);
+				this.plugin.updateExpandedPath(node.path, true);
 				this.render();
 			} else if (node.hasChildren) {
 				// 没有文件夹笔记，有子节点则展开
@@ -1130,6 +1144,7 @@ tags: [excalidraw]
 			// 确保目标文件夹展开
 			targetFolder.expanded = true;
 			this.expandedPaths.add(targetFolder.path);
+			this.plugin.updateExpandedPath(targetFolder.path, true);
 		} catch (error) {
 			new Notice('移动失败: ' + (error as Error).message);
 		}
