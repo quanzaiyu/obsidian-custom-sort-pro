@@ -1230,15 +1230,17 @@ tags: [excalidraw]
 
 		let spec = await this.sortSpecManager.load(folderPath);
 
-		// 如果没有 sortspec 或排序为空，用实际子项初始化
+		// 如果没有 sortspec 或排序为空，用实际子项初始化，保留现有的 customIcons
 		if (!spec || spec.sortingSpec.length === 0) {
 			const actualChildren: string[] = [];
 			for (const child of folder.children) {
 				const name = child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name;
 				actualChildren.push(name);
 			}
-			await this.sortSpecManager.save(folderPath, actualChildren, {});
-			spec = { sortingSpec: actualChildren, customIcons: {} };
+			// 保留现有的 customIcons
+			const existingIcons = spec?.customIcons || {};
+			await this.sortSpecManager.save(folderPath, actualChildren, existingIcons);
+			spec = { sortingSpec: actualChildren, customIcons: existingIcons };
 		}
 
 		const items = [...spec.sortingSpec];
