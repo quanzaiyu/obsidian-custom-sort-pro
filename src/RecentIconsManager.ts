@@ -31,18 +31,17 @@ export class RecentIconsManager {
 	}
 
 	add(icon: string, isCustom: boolean): void {
-		const existingIndex = this.recentIcons.findIndex(item => item.icon === icon);
+		// 移除已存在的相同图标（保持 isCustom 字段一致）
+		this.recentIcons = this.recentIcons.filter(item => item.icon !== icon);
 
-		if (existingIndex !== -1) {
-			this.recentIcons.splice(existingIndex, 1);
-		}
-
+		// 添加到最前面
 		this.recentIcons.unshift({
 			icon,
 			isCustom,
 			timestamp: Date.now()
 		});
 
+		// 限制数量
 		if (this.recentIcons.length > MAX_RECENT_ICONS) {
 			this.recentIcons = this.recentIcons.slice(0, MAX_RECENT_ICONS);
 		}

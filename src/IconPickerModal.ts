@@ -253,6 +253,7 @@ export class IconPickerModal extends Modal {
 					itemEl.textContent = item.icon;
 					itemEl.title = item.icon;
 					itemEl.addEventListener('click', () => {
+						this.recentManager.add(item.icon, false);
 						this.callbacks.onSelect(item.icon);
 						this.close();
 					});
@@ -272,6 +273,7 @@ export class IconPickerModal extends Modal {
 					const fileName = item.icon.split('/').pop() || item.icon;
 					itemEl.title = fileName;
 					itemEl.addEventListener('click', () => {
+						this.recentManager.add(item.icon, true);
 						this.callbacks.onSelect(item.icon);
 						this.close();
 					});

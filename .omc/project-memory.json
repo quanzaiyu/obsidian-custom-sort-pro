@@ -117,6 +117,12 @@
       "type": "file"
     },
     {
+      "path": "src\\IconPickerModal.ts",
+      "accessCount": 5,
+      "lastAccessed": 1780384312401,
+      "type": "directory"
+    },
+    {
       "path": "src\\main.ts",
       "accessCount": 3,
       "lastAccessed": 1780307012890,
@@ -126,6 +132,12 @@
       "path": "src\\MySortView.ts",
       "accessCount": 3,
       "lastAccessed": 1780307022015,
+      "type": "file"
+    },
+    {
+      "path": "src\\RecentIconsManager.ts",
+      "accessCount": 3,
+      "lastAccessed": 1780384276185,
       "type": "file"
     }
   ],
