@@ -65,6 +65,12 @@
 	flex-shrink: 0;
 }
 
+.sort-gui-item-toggle-placeholder {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+}
+
 .sort-gui-item-toggle:hover {
 	color: var(--text-normal);
 }
@@ -101,6 +107,22 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+.sort-gui-item-sortfile {
+	font-size: 14px;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 2px 6px;
+	border-radius: 3px;
+	flex-shrink: 0;
+	transition: all 0.15s ease;
+	opacity: 0.6;
+}
+
+.sort-gui-item-sortfile:hover {
+	opacity: 1;
+	background: var(--background-modifier-hover);
 }
 
 .sort-gui-tree-children {

@@ -8,7 +8,7 @@ export class SortSpecManager {
 		this.app = app;
 	}
 
-	private getSortSpecPath(folderPath: string): string {
+	getSortSpecPath(folderPath: string): string {
 		// 处理根目录
 		if (folderPath === '/' || folderPath === '' || folderPath === '//') {
 			return 'sortspec.md';
@@ -26,6 +26,13 @@ export class SortSpecManager {
 		}
 
 		return `${normalized}/sortspec.md`;
+	}
+
+	// 获取文件夹的 sortSpec 文件
+	getSortSpecFile(folderPath: string): TFile | null {
+		const sortspecPath = this.getSortSpecPath(folderPath);
+		const file = this.app.vault.getAbstractFileByPath(sortspecPath);
+		return file instanceof TFile ? file : null;
 	}
 
 	async load(folderPath: string): Promise<SortSpec | null> {

@@ -83,10 +83,8 @@ export class DragDropTree {
 
 		this.vaultEventRefs.push(
 			this.app.vault.on('delete', (file: TAbstractFile) => {
-				console.log('[DragDropTree] delete 事件触发:', file.path);
 				// 拖拽操作期间跳过刷新
 				if (this.dragOperationInProgress) {
-					console.log('[DragDropTree] 跳过 delete 刷新，拖拽操作进行中');
 					return;
 				}
 				clearDebouncedTimeout();
@@ -96,9 +94,7 @@ export class DragDropTree {
 
 		this.vaultEventRefs.push(
 			this.app.vault.on('create', (file: TAbstractFile) => {
-				console.log('[DragDropTree] create 事件触发:', file.path);
 				if (this.dragOperationInProgress) {
-					console.log('[DragDropTree] 跳过 create 刷新，拖拽操作进行中');
 					return;
 				}
 				clearDebouncedTimeout();
@@ -108,9 +104,7 @@ export class DragDropTree {
 
 		this.vaultEventRefs.push(
 			this.app.vault.on('rename', (file: TAbstractFile, oldPath: string) => {
-				console.log('[DragDropTree] rename 事件触发:', oldPath, '->', file.path);
 				if (this.dragOperationInProgress) {
-					console.log('[DragDropTree] 跳过 rename 刷新，拖拽操作进行中');
 					return;
 				}
 				clearDebouncedTimeout();
@@ -126,32 +120,26 @@ export class DragDropTree {
 	private async reload(): Promise<void> {
 		// 防止并发刷新
 		if (this.isRefreshing) {
-			console.log('[DragDropTree] reload 跳过，正在刷新中');
 			this.pendingRefresh = true;
 			return;
 		}
 
 		// 拖拽操作期间跳过 reload，但记录一次
 		if (this.dragOperationInProgress) {
-			console.log('[DragDropTree] reload 跳过，拖拽操作进行中，计数+1');
 			this.dragRefreshDepth++;
 			return;
 		}
 
 		this.isRefreshing = true;
-		console.log('[DragDropTree] reload 开始');
 
 		try {
 			await this.buildTree();
-			console.log('[DragDropTree] buildTree 完成');
 			this.refreshTreeInPlace();
-			console.log('[DragDropTree] refreshTreeInPlace 完成');
 		} finally {
 			this.isRefreshing = false;
 
 			// 如果在刷新期间有新的刷新请求，立即处理
 			if (this.pendingRefresh) {
-				console.log('[DragDropTree] 处理 pending refresh');
 				this.pendingRefresh = false;
 				this.reload();
 			}
@@ -161,31 +149,23 @@ export class DragDropTree {
 	// 增量更新：只更新变化的节点，不清空整个 DOM
 	private refreshTreeInPlace(): void {
 		if (!this.container?.parentNode) {
-			console.log('[refreshTreeInPlace] container 无父节点');
 			return;
 		}
 
 		const treeEl = this.container.querySelector('.sort-gui-tree');
 		if (!treeEl) {
-			console.log('[refreshTreeInPlace] 没有 treeEl，完整渲染');
 			this.render();
 			return;
 		}
-
-		console.log('[refreshTreeInPlace] treeEl 子元素数量:', treeEl.children.length);
 
 		// 获取旧的 DOM 元素映射
 		const oldElements = new Map<string, HTMLElement>();
 		treeEl.querySelectorAll('.sort-gui-tree-item[data-path]').forEach(el => {
 			oldElements.set((el as HTMLElement).dataset.path || '', el as HTMLElement);
 		});
-		console.log('[refreshTreeInPlace] oldElements 数量:', oldElements.size);
-		console.log('[refreshTreeInPlace] tree 长度:', this.tree.length);
 
 		// 比较并更新节点
 		this.updateTreeNodesInPlace(treeEl, this.tree, oldElements);
-
-		console.log('[refreshTreeInPlace] 完成后 treeEl 子元素数量:', treeEl.children.length);
 	}
 
 	private updateTreeNodesInPlace(parentEl: HTMLElement, nodes: TreeNode[], oldElements: Map<string, HTMLElement>, parentPaths?: Set<string>): void {
@@ -283,14 +263,10 @@ export class DragDropTree {
 		const treeEl = this.container?.querySelector('.sort-gui-tree');
 		if (!treeEl) return;
 
-		console.log('[refreshFolderChildren] filePath:', filePath, 'parentPath:', parentPath);
-
 		// 根目录特殊处理
 		if (parentPath === '/') {
-			console.log('[refreshFolderChildren] 根目录刷新');
 			// 保存当前展开状态
 			const savedExpandedPaths = new Set(this.expandedPaths);
-			console.log('[refreshFolderChildren] savedExpandedPaths:', Array.from(savedExpandedPaths));
 
 			// 重新加载根目录的 sortspec
 			await this.loadFolderSortSpec(this.app.vault.getRoot());
@@ -338,14 +314,12 @@ export class DragDropTree {
 			// 递归加载已展开的子文件夹
 			for (const node of newRootChildren) {
 				if (node.expanded) {
-					console.log('[refreshFolderChildren] 加载子节点:', node.name);
 					await this.loadNodeChildren(node);
 				}
 			}
 
 			// 保存到 tree
 			this.tree = newRootChildren;
-			console.log('[refreshFolderChildren] tree 节点:', this.tree.map(n => ({ name: n.name, expanded: n.expanded, children: n.children?.length })));
 
 			// 更新 DOM
 			this.refreshTreeInPlace();
@@ -413,11 +387,8 @@ export class DragDropTree {
 	}
 
 	private async buildTree(): Promise<void> {
-		console.log('[DragDropTree] buildTree 内部');
 		// 使用 getAbstractFileByPath 获取最新的 root 引用，避免缓存问题
 		const root = this.app.vault.getAbstractFileByPath('/') as TFolder;
-		console.log('[DragDropTree] root children names:', root.children.map(c => c.name));
-		console.log('[DragDropTree] root children count:', root.children.length);
 		this.sortOrdersByFolder.clear();
 		this.customIconsByFolder.clear();
 
@@ -433,7 +404,6 @@ export class DragDropTree {
 		}
 
 		this.tree = this.buildNodesFromFolder(root);
-		console.log('[DragDropTree] tree 节点数:', this.tree.length);
 
 		// 递归加载已展开的子文件夹内容，恢复展开状态
 		await this.loadExpandedSubfolders(this.tree);
@@ -526,7 +496,8 @@ export class DragDropTree {
 
 	private isFolderNote(fileName: string, folder: TFolder): boolean {
 		const folderName = folder.path === '/' ? '' : folder.name;
-		return fileName === `${folderName}.md`;
+		// 隐藏文件夹笔记（同名 .md）和排序文件
+		return fileName === `${folderName}.md` || fileName === 'sortspec.md';
 	}
 
 	render(): void {
@@ -739,6 +710,9 @@ tags: [excalidraw]
 				e.stopPropagation();
 				this.toggleExpand(node);
 			});
+		} else {
+			// 文件需要占位，保持对齐
+			itemEl.createDiv('sort-gui-item-toggle-placeholder');
 		}
 
 		const iconEl = itemEl.createDiv('sort-gui-item-icon');
@@ -751,6 +725,17 @@ tags: [excalidraw]
 
 		const nameEl = itemEl.createDiv('sort-gui-item-name');
 		nameEl.textContent = node.name;
+
+		// 如果是文件夹，添加打开排序文件的按钮
+		if (node.type === 'folder') {
+			const sortFileBtn = itemEl.createDiv('sort-gui-item-sortfile');
+			sortFileBtn.textContent = '📋';
+			sortFileBtn.title = '打开排序文件';
+			sortFileBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				this.openSortSpecFile(node);
+			});
+		}
 
 		itemEl.setAttr('draggable', 'true');
 		itemEl.dataset.id = node.id;
@@ -767,6 +752,37 @@ tags: [excalidraw]
 		itemEl.addEventListener('drop', (e) => this.handleDrop(e, node));
 
 		return itemEl;
+	}
+
+	// 打开排序文件
+	private async openSortSpecFile(node: TreeNode): Promise<void> {
+		let sortFile = this.sortSpecManager.getSortSpecFile(node.path);
+
+		if (!sortFile) {
+			// 文件不存在，创建并写入当前目录的文件列表
+			const folder = this.app.vault.getFolderByPath(node.path);
+			if (folder) {
+				// 获取当前文件夹的所有文件和文件夹（排除排序文件和文件夹笔记）
+				const items: string[] = [];
+				for (const child of folder.children) {
+					if (child.name === 'sortspec.md' || this.isFolderNote(child.name, folder)) {
+						continue;
+					}
+					items.push(child.name);
+				}
+
+				// 创建排序文件
+				const sortspecPath = this.sortSpecManager.getSortSpecPath(node.path);
+				const content = `---\nsorting-spec:\n  - ${items.join('\n  - ')}\n---\n`;
+				await this.app.vault.create(sortspecPath, content);
+				sortFile = this.app.vault.getAbstractFileByPath(sortspecPath) as TFile;
+				new Notice(`已为 "${node.name}" 创建排序文件`);
+			}
+		}
+
+		if (sortFile) {
+			this.app.workspace.getLeaf(false).openFile(sortFile);
+		}
 	}
 
 	private toggleExpand(node: TreeNode): void {
@@ -959,6 +975,12 @@ tags: [excalidraw]
 		});
 
 		menu.addSeparator();
+
+		menu.addItem(item => {
+			item.setTitle('打开排序文件').setIcon('file-text').onClick(() => {
+				this.openSortSpecFile(node);
+			});
+		});
 
 		menu.addItem(item => {
 			item.setTitle('复制').setIcon('copy').onClick(async () => {
