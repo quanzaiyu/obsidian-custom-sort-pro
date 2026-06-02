@@ -158,6 +158,11 @@ export class DragDropTree {
 			return;
 		}
 
+		// 保存滚动位置
+		const scrollContainer = this.container.closest('.sort-gui-tree-container') || this.container;
+		const scrollTop = scrollContainer.scrollTop;
+		const scrollLeft = scrollContainer.scrollLeft;
+
 		// 获取旧的 DOM 元素映射
 		const oldElements = new Map<string, HTMLElement>();
 		treeEl.querySelectorAll('.sort-gui-tree-item[data-path]').forEach(el => {
@@ -166,6 +171,12 @@ export class DragDropTree {
 
 		// 比较并更新节点
 		this.updateTreeNodesInPlace(treeEl, this.tree, oldElements);
+
+		// 恢复滚动位置
+		requestAnimationFrame(() => {
+			scrollContainer.scrollTop = scrollTop;
+			scrollContainer.scrollLeft = scrollLeft;
+		});
 	}
 
 	private updateTreeNodesInPlace(parentEl: HTMLElement, nodes: TreeNode[], oldElements: Map<string, HTMLElement>, parentPaths?: Set<string>): void {
