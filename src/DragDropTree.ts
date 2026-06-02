@@ -20,6 +20,8 @@ export class DragDropTree {
 	private onIconChange?: (node: TreeNode, icon: string | undefined) => void;
 	private initialized: boolean = false;
 	private vaultEventRefs: EventRef[] = [];
+	private activeHighlightRef: EventRef | null = null;
+	private activeFilePath: string | null = null;
 
 	constructor(app: App, container: HTMLElement, plugin: CustomSortV2Plugin) {
 		this.app = app;
@@ -115,6 +117,122 @@ export class DragDropTree {
 		this.vaultEventRefs.push(
 			this.app.vault.on('modify', debouncedReload)
 		);
+
+		// 监听当前激活文件变化，高亮显示
+		this.activeHighlightRef = this.app.workspace.on('active-leaf-change', (leaf) => {
+			if (leaf) {
+				const view = leaf.view as any;
+				const file = view?.file;
+				if (file) {
+					this.highlightActiveFile(file.path);
+				} else {
+					this.clearHighlight();
+				}
+			} else {
+				this.clearHighlight();
+			}
+		});
+	}
+
+	private highlightActiveFile(filePath: string): void {
+		this.activeFilePath = filePath;
+		// 移除之前的高亮
+		this.container.querySelectorAll('.sort-gui-tree-item.active').forEach(el => {
+			el.classList.remove('active');
+		});
+
+		// 检查是否是文件夹笔记
+		const folderNotePath = this.getFolderNotePath(filePath);
+		if (folderNotePath) {
+			// 是文件夹笔记，高亮对应的文件夹
+			this.highlightNode(folderNotePath);
+			return;
+		}
+
+		// 检查是否是排序文件
+		const sortSpecPath = this.getParentSortSpecFolder(filePath);
+		if (sortSpecPath) {
+			// 是排序文件，高亮对应的文件夹
+			this.highlightNode(sortSpecPath);
+			return;
+		}
+
+		// 普通文件，直接高亮
+		this.highlightNode(filePath);
+	}
+
+	// 获取文件夹笔记对应的文件夹路径
+	private getFolderNotePath(filePath: string): string | null {
+		const lastSlash = filePath.lastIndexOf('/');
+		if (lastSlash <= 0) return null;
+
+		const parentPath = filePath.substring(0, lastSlash);
+		const fileName = filePath.substring(lastSlash + 1);
+
+		// 文件名格式必须是 xxx.md
+		if (!fileName.endsWith('.md')) return null;
+
+		const folderName = fileName.slice(0, -3); // 去掉 .md
+		const parentFolder = this.app.vault.getFolderByPath(parentPath);
+		if (!parentFolder) return null;
+
+		// 检查父文件夹名称是否和文件名匹配（文件夹笔记）
+		if (parentFolder.name === folderName) {
+			return parentPath;
+		}
+		return null;
+	}
+
+	// 获取排序文件对应的文件夹路径
+	private getParentSortSpecFolder(filePath: string): string | null {
+		const lastSlash = filePath.lastIndexOf('/');
+		if (lastSlash <= 0) return null;
+
+		// 只处理 sortspec.md
+		if (!filePath.endsWith('sortspec.md')) return null;
+
+		return filePath.substring(0, lastSlash);
+	}
+
+	// 高亮指定路径的节点
+	private highlightNode(path: string): void {
+		// 确保父文件夹展开
+		this.ensureParentExpanded(path);
+
+		// 延迟查找并高亮节点
+		setTimeout(() => {
+			const itemEl = this.container.querySelector(`.sort-gui-tree-item[data-path="${path}"]`);
+			if (itemEl) {
+				itemEl.classList.add('active');
+			}
+		}, 50);
+	}
+
+	private clearHighlight(): void {
+		this.activeFilePath = null;
+		this.container.querySelectorAll('.sort-gui-tree-item.active').forEach(el => {
+			el.classList.remove('active');
+		});
+	}
+
+	private ensureParentExpanded(filePath: string): void {
+		const lastSlash = filePath.lastIndexOf('/');
+		if (lastSlash <= 0) return;
+
+		const parentPath = filePath.substring(0, lastSlash);
+		if (!this.expandedPaths.has(parentPath)) {
+			this.expandedPaths.add(parentPath);
+			this.plugin.updateExpandedPath(parentPath, true);
+			// 需要重新构建树以显示新展开的文件夹
+			this.buildTree().then(() => {
+				this.refreshTreeInPlace();
+				// 高亮目标文件
+				const itemEl = this.container.querySelector(`.sort-gui-tree-item[data-path="${filePath}"]`);
+				if (itemEl) {
+					itemEl.classList.add('active');
+				}
+			});
+		}
 	}
 
 	private async reload(): Promise<void> {
