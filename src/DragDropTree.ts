@@ -992,11 +992,16 @@ tags: [excalidraw]
 		}
 	}
 
-	private toggleExpand(node: TreeNode): void {
+	private async toggleExpand(node: TreeNode): Promise<void> {
 		node.expanded = !node.expanded;
 		if (node.expanded) {
 			this.expandedPaths.add(node.path);
 			this.plugin.updateExpandedPath(node.path, true);
+			// 加载该文件夹的 sortspec，避免排序失效
+			const folder = this.app.vault.getFolderByPath(node.path);
+			if (folder) {
+				await this.loadFolderSortSpec(folder);
+			}
 		} else {
 			this.expandedPaths.delete(node.path);
 			this.plugin.updateExpandedPath(node.path, false);
@@ -1037,6 +1042,11 @@ tags: [excalidraw]
 				node.expanded = true;
 				this.expandedPaths.add(node.path);
 				this.plugin.updateExpandedPath(node.path, true);
+				// 加载该文件夹的 sortspec
+				const folder = this.app.vault.getFolderByPath(node.path);
+				if (folder) {
+					await this.loadFolderSortSpec(folder);
+				}
 				this.render();
 			} else if (node.hasChildren) {
 				// 没有文件夹笔记，有子节点则展开
