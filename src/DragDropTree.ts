@@ -22,6 +22,10 @@ export class DragDropTree {
 	private vaultEventRefs: EventRef[] = [];
 	private activeHighlightRef: EventRef | null = null;
 	private activeFilePath: string | null = null;
+	private selectedNodes: Set<string> = new Set();
+	private isShiftPressed: boolean = false;
+	private isCtrlPressed: boolean = false;
+	private lastSelectedPath: string | null = null;
 
 	constructor(app: App, container: HTMLElement, plugin: CustomSortV2Plugin) {
 		this.app = app;
@@ -47,10 +51,42 @@ export class DragDropTree {
 		// 清理旧的事件监听器，防止重复注册
 		this.unregisterVaultListeners();
 
+		// 注册键盘事件
+		this.registerKeyboardListener();
+
 		await this.buildTree();
 		this.render();
 		this.registerVaultListener();
 		this.initialized = true;
+	}
+
+	private registerKeyboardListener(): void {
+		// 监听 Shift 和 Ctrl 键
+		window.addEventListener('keydown', (e) => {
+			if (e.key === 'Shift' && !this.isShiftPressed) {
+				this.isShiftPressed = true;
+			}
+			if (e.ctrlKey || e.metaKey) {
+				this.isCtrlPressed = true;
+			}
+		});
+
+		window.addEventListener('keyup', (e) => {
+			if (e.key === 'Shift') {
+				this.isShiftPressed = false;
+			}
+			if (e.key === 'Control' || e.key === 'Meta') {
+				this.isCtrlPressed = false;
+			}
+		});
+
+		// 点击空白区域清除选择
+		this.container.addEventListener('click', (e) => {
+			const target = e.target as HTMLElement;
+			if (!target.closest('.sort-gui-tree-item')) {
+				this.clearSelection();
+			}
+		});
 	}
 
 	private unregisterVaultListeners(): void {
@@ -870,7 +906,18 @@ tags: [excalidraw]
 		itemEl.dataset.id = node.id;
 		itemEl.dataset.type = node.type;
 
+		// 点击选择（Shift 多选）
 		itemEl.addEventListener('click', (e) => this.handleItemClick(e, node));
+
+		// Ctrl/Cmd 点击选择
+		itemEl.addEventListener('click', (e) => {
+			if (e.ctrlKey || e.metaKey) {
+				e.stopPropagation();
+				this.toggleNodeSelection(node);
+				this.lastSelectedPath = node.path;
+			}
+		});
+
 		itemEl.addEventListener('contextmenu', (e) => this.showContextMenu(e, node));
 
 		itemEl.addEventListener('dragstart', (e) => this.handleDragStart(e, node));
@@ -881,6 +928,37 @@ tags: [excalidraw]
 		itemEl.addEventListener('drop', (e) => this.handleDrop(e, node));
 
 		return itemEl;
+	}
+
+	// 切换节点选择状态
+	private toggleNodeSelection(node: TreeNode): void {
+		if (this.selectedNodes.has(node.path)) {
+			this.selectedNodes.delete(node.path);
+			this.container.querySelector(`.sort-gui-tree-item[data-path="${node.path}"]`)?.classList.remove('selected');
+		} else {
+			this.selectedNodes.add(node.path);
+			this.container.querySelector(`.sort-gui-tree-item[data-path="${node.path}"]`)?.classList.add('selected');
+		}
+		this.lastSelectedPath = node.path;
+	}
+
+	// 清除所有选择
+	private clearSelection(): void {
+		this.selectedNodes.clear();
+		this.lastSelectedPath = null;
+		this.container.querySelectorAll('.sort-gui-tree-item.selected').forEach(el => {
+			el.classList.remove('selected');
+		});
+	}
+
+	// 获取选中的节点
+	private getSelectedNodes(): TreeNode[] {
+		const nodes: TreeNode[] = [];
+		for (const path of this.selectedNodes) {
+			const node = this.findNodeByPath(path, this.tree);
+			if (node) nodes.push(node);
+		}
+		return nodes;
 	}
 
 	// 打开排序文件
@@ -927,6 +1005,29 @@ tags: [excalidraw]
 	}
 
 	private async handleItemClick(e: MouseEvent, node: TreeNode): Promise<void> {
+		// Shift 点击多选（不需要先按 Ctrl）
+		if (e.shiftKey) {
+			if (this.lastSelectedPath) {
+				e.preventDefault();
+				this.selectRange(this.lastSelectedPath, node.path);
+			} else {
+				// 如果没有上次选择，先选中当前项
+				this.toggleNodeSelection(node);
+				this.lastSelectedPath = node.path;
+			}
+			return;
+		}
+
+		// Ctrl/Cmd 点击已在 createTreeItem 中处理
+		if (e.ctrlKey || e.metaKey) {
+			return;
+		}
+
+		// 普通点击：清除之前的选择，只选中当前项
+		this.clearSelection();
+		this.toggleNodeSelection(node);
+		this.lastSelectedPath = node.path;
+
 		if (node.type === 'folder') {
 			// 优先检查文件夹笔记
 			const folderNote = this.getFolderNote(node);
@@ -947,6 +1048,40 @@ tags: [excalidraw]
 				this.app.workspace.getLeaf(false).openFile(file);
 			}
 		}
+	}
+
+	// 范围选择（Shift 点击）
+	private selectRange(startPath: string, endPath: string): void {
+		// 找到两个节点在树中的顺序
+		const allNodes = this.flattenTree(this.tree);
+		const startIndex = allNodes.findIndex(n => n.path === startPath);
+		const endIndex = allNodes.findIndex(n => n.path === endPath);
+
+		if (startIndex === -1 || endIndex === -1) return;
+
+		const [from, to] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+
+		// 选择范围内的所有节点
+		for (let i = from; i <= to; i++) {
+			const node = allNodes[i];
+			if (node.type !== 'folder') { // 文件夹不参与多选拖拽
+				this.selectedNodes.add(node.path);
+				this.container.querySelector(`.sort-gui-tree-item[data-path="${node.path}"]`)?.classList.add('selected');
+			}
+		}
+
+		this.lastSelectedPath = endPath;
+	}
+
+	// 将树展平为一维数组（按显示顺序）
+	private flattenTree(nodes: TreeNode[], result: TreeNode[] = []): TreeNode[] {
+		for (const node of nodes) {
+			result.push(node);
+			if (node.type === 'folder' && node.expanded && node.children.length > 0) {
+				this.flattenTree(node.children, result);
+			}
+		}
+		return result;
 	}
 
 	private getFolderNote(node: TreeNode): TFile | null {
@@ -1171,20 +1306,39 @@ tags: [excalidraw]
 	}
 
 	private handleDragStart(e: DragEvent, node: TreeNode): void {
+		// 如果没有选中的节点，将当前节点加入选中
+		if (this.selectedNodes.size === 0) {
+			this.selectedNodes.add(node.path);
+			this.container.querySelector(`.sort-gui-tree-item[data-path="${node.path}"]`)?.classList.add('selected');
+		}
+
 		this.dragId = node.id;
 		this.dragNode = node;
-		(e.target as HTMLElement).closest('.sort-gui-tree-item')?.classList.add('dragging');
+
+		// 给所有选中的节点添加拖拽样式
+		for (const path of this.selectedNodes) {
+			this.container.querySelector(`.sort-gui-tree-item[data-path="${path}"]`)?.classList.add('dragging');
+		}
+
 		if (e.dataTransfer) {
 			e.dataTransfer.effectAllowed = 'move';
+			// 设置拖拽数据
+			e.dataTransfer.setData('text/plain', Array.from(this.selectedNodes).join(','));
 		}
 	}
 
-	private handleDragEnd(e: DragEvent): void {
-		(e.target as HTMLElement).closest('.sort-gui-tree-item')?.classList.remove('dragging');
+	private handleDragEnd(_e: DragEvent): void {
+		// 移除所有选中节点的拖拽样式
+		for (const path of this.selectedNodes) {
+			this.container.querySelector(`.sort-gui-tree-item[data-path="${path}"]`)?.classList.remove('dragging');
+		}
 		this.clearDropIndicators();
 		this.dragId = null;
 		this.dragNode = null;
 		this.dropMode = null;
+
+		// 拖拽结束后清除选择
+		this.clearSelection();
 	}
 
 	private clearDropIndicators(): void {
@@ -1232,17 +1386,47 @@ tags: [excalidraw]
 		// 标记拖拽操作进行中，阻止 vault 事件触发刷新
 		this.dragOperationInProgress = true;
 
+		// 获取所有选中的节点（包括拖拽的节点）
+		const selectedPaths = new Set(this.selectedNodes);
+		if (!selectedPaths.has(this.dragNode.path)) {
+			selectedPaths.add(this.dragNode.path);
+		}
+
 		try {
 			if (this.dropMode === 'folder' && targetNode.type === 'folder') {
-				await this.moveIntoFolder(this.dragNode, targetNode);
+				// 批量移动到目标文件夹
+				for (const path of selectedPaths) {
+					const node = this.findNodeByPath(path, this.tree);
+					if (node && node.type !== 'folder') {
+						await this.moveIntoFolder(node, targetNode, true);
+					}
+				}
+				new Notice(`已将 ${selectedPaths.size} 个项目移动到 "${targetNode.name}"`);
 			} else {
 				const sourcePath = this.getParentPath(this.dragNode.path);
 				const targetPath = this.getParentPath(targetNode.path);
 
 				if (sourcePath === targetPath) {
-					await this.reorderInSameFolder(this.dragNode, targetNode, this.dropMode === 'after' ? 'after' : 'before');
+					// 同文件夹批量排序
+					await this.reorderMultipleInSameFolder(selectedPaths, targetNode, this.dropMode === 'after' ? 'after' : 'before');
 				} else {
-					await this.moveToAnotherFolder(this.dragNode, targetNode, this.dropMode === 'after' ? 'after' : 'before');
+					// 跨文件夹批量移动
+					let movedCount = 0;
+					for (const path of selectedPaths) {
+						const node = this.findNodeByPath(path, this.tree);
+						if (node && node.type !== 'folder') {
+							const nodeSourcePath = this.getParentPath(node.path);
+							if (nodeSourcePath === targetPath) {
+								// 已经在目标文件夹，跳过
+								continue;
+							}
+							await this.moveToAnotherFolderWithSuffix(node, targetNode, this.dropMode === 'after' ? 'after' : 'before', true);
+							movedCount++;
+						}
+					}
+					if (movedCount > 0) {
+						new Notice(`已将 ${movedCount} 个项目移动到 "${targetPath === '/' ? '根目录' : targetPath}"`);
+					}
 				}
 			}
 		} finally {
@@ -1251,28 +1435,98 @@ tags: [excalidraw]
 			this.refreshTreeInPlace();
 
 			// 延迟重置标志，等待 vault 事件触发 reload
-			// 这样 reload 会重新构建完整的 tree（包括加载展开的子文件夹内容）
 			setTimeout(() => {
 				this.dragRefreshDepth = 0;
 				this.dragOperationInProgress = false;
-				console.log('[DragDropTree] 拖拽操作标志已重置');
 			}, 500);
 		}
 	}
 
-	private getParentPath(path: string): string {
-		const lastSlash = path.lastIndexOf('/');
-		return lastSlash <= 0 ? '/' : path.substring(0, lastSlash);
+	// 批量在同一文件夹内排序
+	private async reorderMultipleInSameFolder(selectedPaths: Set<string>, targetNode: TreeNode, mode: 'before' | 'after'): Promise<void> {
+		const folderPath = this.getParentPath(targetNode.path);
+		const folder = folderPath === '/' ? this.app.vault.getRoot() : this.app.vault.getFolderByPath(folderPath);
+
+		if (!folder) return;
+
+		let spec = await this.sortSpecManager.load(folderPath);
+
+		// 如果没有 sortspec 或排序为空，用实际子项初始化，保留 customIcons
+		if (!spec || spec.sortingSpec.length === 0) {
+			const actualChildren: string[] = [];
+			for (const child of folder.children) {
+				const name = child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name;
+				actualChildren.push(name);
+			}
+			const existingIcons = spec?.customIcons || {};
+			await this.sortSpecManager.save(folderPath, actualChildren, existingIcons);
+			spec = { sortingSpec: actualChildren, customIcons: existingIcons };
+		}
+
+		const items = [...spec.sortingSpec];
+		const targetName = targetNode.name.endsWith('.md') ? targetNode.name.slice(0, -3) : targetNode.name;
+
+		// 获取选中项的名称列表
+		const selectedNames: string[] = [];
+		for (const path of selectedPaths) {
+			const node = this.findNodeByPath(path, this.tree);
+			if (node) {
+				const name = node.name.endsWith('.md') ? node.name.slice(0, -3) : node.name;
+				selectedNames.push(name);
+			}
+		}
+
+		// 找到目标位置
+		let targetIndex = items.indexOf(targetName);
+		if (targetIndex === -1) {
+			// 目标不在列表中，添加到末尾
+			for (const name of selectedNames) {
+				if (!items.includes(name)) {
+					items.push(name);
+				}
+			}
+		} else {
+			// 先从原位置移除所有选中项
+			const toRemove: string[] = [];
+			for (const name of selectedNames) {
+				const idx = items.indexOf(name);
+				if (idx !== -1) {
+					toRemove.push(name);
+				}
+			}
+			// 按原顺序逆序移除，避免索引变化
+			for (const name of toRemove.reverse()) {
+				const idx = items.indexOf(name);
+				if (idx !== -1) {
+					items.splice(idx, 1);
+				}
+			}
+
+			// 重新计算目标位置（可能在移除后变化）
+			targetIndex = items.indexOf(targetName);
+			if (targetIndex === -1) {
+				items.push(...selectedNames);
+			} else {
+				// 插入到目标位置
+				const insertIndex = mode === 'after' ? targetIndex + 1 : targetIndex;
+				items.splice(insertIndex, 0, ...selectedNames);
+			}
+		}
+
+		await this.sortSpecManager.save(folderPath, items, spec.customIcons);
+		this.updateSortMapInMemory(folderPath, items, spec.customIcons);
+		new Notice(`已更新排序`);
 	}
 
-	private async moveIntoFolder(dragNode: TreeNode, targetFolder: TreeNode): Promise<void> {
+	// 修改 moveIntoFolder 支持静默模式
+	private async moveIntoFolder(dragNode: TreeNode, targetFolder: TreeNode, silent: boolean = false): Promise<void> {
 		const sourcePath = this.getParentPath(dragNode.path);
 		const newPath = targetFolder.path === '/' ? `/${dragNode.name}` : `${targetFolder.path}/${dragNode.name}`;
 
 		try {
 			const file = this.app.vault.getAbstractFileByPath(dragNode.path);
 			if (!file) {
-				new Notice('文件未找到');
+				if (!silent) new Notice('文件未找到');
 				return;
 			}
 
@@ -1280,9 +1534,11 @@ tags: [excalidraw]
 			await this.sortSpecManager.removeItem(sourcePath, dragNode.name);
 			await this.sortSpecManager.addItem(targetFolder.path, dragNode.name);
 
-			new Notice(`已将 "${dragNode.name}" 移动到 "${targetFolder.name}"`);
+			if (!silent) {
+				new Notice(`已将 "${dragNode.name}" 移动到 "${targetFolder.name}"`);
+			}
 
-			// 增量更新排序映射
+			// 增量更新
 			const sourceSpec = await this.sortSpecManager.load(sourcePath);
 			const targetSpec = await this.sortSpecManager.load(targetFolder.path);
 			if (sourceSpec) {
@@ -1292,114 +1548,16 @@ tags: [excalidraw]
 				this.updateSortMapInMemory(targetFolder.path, targetSpec.sortingSpec, targetSpec.customIcons);
 			}
 
-			// 确保目标文件夹展开
 			targetFolder.expanded = true;
 			this.expandedPaths.add(targetFolder.path);
 			this.plugin.updateExpandedPath(targetFolder.path, true);
 		} catch (error) {
-			new Notice('移动失败: ' + (error as Error).message);
+			if (!silent) new Notice('移动失败: ' + (error as Error).message);
 		}
 	}
 
-	// 更新 tree 结构以反映移动操作
-	private updateTreeForMove(dragNode: TreeNode, targetFolder: TreeNode, newPath: string): void {
-		// 更新 dragNode 的路径和位置
-		dragNode.path = newPath;
-		dragNode.id = newPath;
-		dragNode.type = dragNode.type; // 类型不变
-
-		// 从源父节点移除
-		const sourceParentPath = this.getParentPath(newPath);
-		const sourceParent = this.findNodeByPath(sourceParentPath, this.tree);
-		if (sourceParent && sourceParent.children) {
-			const idx = sourceParent.children.findIndex(n => n.id === dragNode.id);
-			if (idx !== -1) {
-				sourceParent.children.splice(idx, 1);
-			}
-		}
-
-		// 如果目标文件夹在 tree 中，直接添加
-		const targetNode = this.findNodeByPath(targetFolder.path, this.tree);
-		if (targetNode) {
-			if (!targetNode.children) {
-				targetNode.children = [];
-			}
-			targetNode.children.push(dragNode);
-			// 按排序重新排列
-			targetNode.children.sort((a, b) => {
-				if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
-					return a.sortOrder - b.sortOrder;
-				}
-				if (a.sortOrder !== undefined) return -1;
-				if (b.sortOrder !== undefined) return 1;
-				return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-			});
-		}
-	}
-
-	private async reorderInSameFolder(dragNode: TreeNode, targetNode: TreeNode, mode: 'before' | 'after'): Promise<void> {
-		const folderPath = this.getParentPath(targetNode.path);
-		const folder = folderPath === '/' ? this.app.vault.getRoot() : this.app.vault.getFolderByPath(folderPath);
-
-		if (!folder) {
-			new Notice('文件夹未找到');
-			return;
-		}
-
-		let spec = await this.sortSpecManager.load(folderPath);
-
-		// 如果没有 sortspec 或排序为空，用实际子项初始化，保留现有的 customIcons
-		if (!spec || spec.sortingSpec.length === 0) {
-			const actualChildren: string[] = [];
-			for (const child of folder.children) {
-				const name = child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name;
-				actualChildren.push(name);
-			}
-			// 保留现有的 customIcons
-			const existingIcons = spec?.customIcons || {};
-			await this.sortSpecManager.save(folderPath, actualChildren, existingIcons);
-			spec = { sortingSpec: actualChildren, customIcons: existingIcons };
-		}
-
-		const items = [...spec.sortingSpec];
-		const dragName = dragNode.name.endsWith('.md') ? dragNode.name.slice(0, -3) : dragNode.name;
-		const targetName = targetNode.name.endsWith('.md') ? targetNode.name.slice(0, -3) : targetNode.name;
-
-		// 如果 dragName 不在列表中，添加它
-		if (!items.includes(dragName)) {
-			items.push(dragName);
-		}
-		// 如果 targetName 不在列表中，添加它
-		if (!items.includes(targetName)) {
-			items.push(targetName);
-		}
-
-		// 从当前位置移除 dragItem
-		const dragIndex = items.indexOf(dragName);
-		items.splice(dragIndex, 1);
-
-		// 重新计算 targetIndex
-		let targetIndex = items.indexOf(targetName);
-		if (targetIndex === -1) {
-			items.push(dragName);
-			await this.sortSpecManager.save(folderPath, items, spec.customIcons);
-			this.updateSortMapInMemory(folderPath, items, spec.customIcons);
-			this.refreshTreeInPlace();
-			return;
-		}
-
-		// 计算插入位置
-		let insertIndex = mode === 'after' ? targetIndex + 1 : targetIndex;
-
-		items.splice(insertIndex, 0, dragName);
-
-		await this.sortSpecManager.save(folderPath, items, spec.customIcons);
-		this.updateSortMapInMemory(folderPath, items, spec.customIcons);
-		new Notice(`已更新排序`);
-		this.refreshTreeInPlace();
-	}
-
-	private async moveToAnotherFolder(dragNode: TreeNode, targetNode: TreeNode, mode: 'before' | 'after'): Promise<void> {
+	// 修改 moveToAnotherFolder 支持静默模式
+	private async moveToAnotherFolder(dragNode: TreeNode, targetNode: TreeNode, mode: 'before' | 'after', silent: boolean = false): Promise<void> {
 		const sourcePath = this.getParentPath(dragNode.path);
 		const targetPath = this.getParentPath(targetNode.path);
 		const newPath = targetPath === '/' ? `/${dragNode.name}` : `${targetPath}/${dragNode.name}`;
@@ -1407,7 +1565,7 @@ tags: [excalidraw]
 		try {
 			const file = this.app.vault.getAbstractFileByPath(dragNode.path);
 			if (!file) {
-				new Notice('文件未找到');
+				if (!silent) new Notice('文件未找到');
 				return;
 			}
 
@@ -1415,20 +1573,50 @@ tags: [excalidraw]
 			await this.sortSpecManager.removeItem(sourcePath, dragNode.name);
 			await this.sortSpecManager.addItem(targetPath, dragNode.name);
 
-			new Notice(`已将 "${dragNode.name}" 移动到 "${targetPath === '/' ? '根目录' : targetPath}"`);
-
-			// 增量更新排序映射
-			const sourceSpec = await this.sortSpecManager.load(sourcePath);
-			const targetSpec = await this.sortSpecManager.load(targetPath);
-			if (sourceSpec) {
-				this.updateSortMapInMemory(sourcePath, sourceSpec.sortingSpec, sourceSpec.customIcons);
-			}
-			if (targetSpec) {
-				this.updateSortMapInMemory(targetPath, targetSpec.sortingSpec, targetSpec.customIcons);
+			if (!silent) {
+				new Notice(`已将 "${dragNode.name}" 移动到 "${targetPath === '/' ? '根目录' : targetPath}"`);
 			}
 		} catch (error) {
-			new Notice('移动失败: ' + (error as Error).message);
+			if (!silent) new Notice('移动失败: ' + (error as Error).message);
 		}
+	}
+
+	// 跨文件夹移动，自动处理重名
+	private async moveToAnotherFolderWithSuffix(dragNode: TreeNode, targetNode: TreeNode, mode: 'before' | 'after', silent: boolean = false): Promise<void> {
+		const sourcePath = this.getParentPath(dragNode.path);
+		const targetPath = this.getParentPath(targetNode.path);
+
+		// 计算唯一的目标路径
+		let newPath = targetPath === '/' ? `/${dragNode.name}` : `${targetPath}/${dragNode.name}`;
+		let counter = 1;
+		while (this.app.vault.getAbstractFileByPath(newPath)) {
+			// 文件已存在，添加数字后缀
+			const ext = dragNode.name.includes('.') ? '.' + dragNode.name.split('.').pop() : '';
+			const baseName = dragNode.name.replace(ext, '');
+			newPath = targetPath === '/' ? `/${baseName} (${counter})${ext}` : `${targetPath}/${baseName} (${counter})${ext}`;
+			counter++;
+		}
+
+		try {
+			const file = this.app.vault.getAbstractFileByPath(dragNode.path);
+			if (!file) {
+				return;
+			}
+
+			await this.app.vault.rename(file, newPath);
+
+			// 从源文件夹移除
+			await this.sortSpecManager.removeItem(sourcePath, dragNode.name);
+			// 添加到目标文件夹（使用原始名称，不包含后缀）
+			await this.sortSpecManager.addItem(targetPath, dragNode.name);
+		} catch (error) {
+			if (!silent) new Notice('移动失败: ' + (error as Error).message);
+		}
+	}
+
+	private getParentPath(path: string): string {
+		const lastSlash = path.lastIndexOf('/');
+		return lastSlash <= 0 ? '/' : path.substring(0, lastSlash);
 	}
 
 	// 更新内存中的排序映射，避免重新构建整棵树

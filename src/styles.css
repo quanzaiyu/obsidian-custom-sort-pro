@@ -45,6 +45,11 @@
 	font-weight: 500;
 }
 
+.sort-gui-tree-item.selected {
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--color-accent);
+}
+
 .sort-gui-tree-item.drop-before {
 	border-top: 2px solid var(--color-accent, #7c3aed);
 	padding-top: 5px;

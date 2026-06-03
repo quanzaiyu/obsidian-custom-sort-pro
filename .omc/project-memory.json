@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1780306751825,
+  "lastScanned": 1780456979297,
   "projectRoot": "d:\\projects\\my_project\\obsidian-custom-sort-pro",
   "techStack": {
     "languages": [
@@ -67,7 +67,7 @@
       "path": "dist",
       "purpose": "Distribution/build output",
       "fileCount": 3,
-      "lastAccessed": 1780306751727,
+      "lastAccessed": 1780456979224,
       "keyFiles": [
         "icons.json",
         "main.js",
@@ -78,7 +78,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 1,
-      "lastAccessed": 1780306751728,
+      "lastAccessed": 1780456979226,
       "keyFiles": [
         "完整的Obsidian文件管理器.md"
       ]
@@ -87,7 +87,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 11,
-      "lastAccessed": 1780306751779,
+      "lastAccessed": 1780456979263,
       "keyFiles": [
         "DragDropTree.ts",
         "IconPickerModal.ts",
@@ -100,20 +100,20 @@
   "hotPaths": [
     {
       "path": "src\\DragDropTree.ts",
-      "accessCount": 110,
-      "lastAccessed": 1780392526294,
+      "accessCount": 148,
+      "lastAccessed": 1780472988024,
+      "type": "file"
+    },
+    {
+      "path": "src\\styles.css",
+      "accessCount": 8,
+      "lastAccessed": 1780457616143,
       "type": "file"
     },
     {
       "path": "src\\SortSpecManager.ts",
       "accessCount": 7,
       "lastAccessed": 1780388620661,
-      "type": "file"
-    },
-    {
-      "path": "src\\styles.css",
-      "accessCount": 7,
-      "lastAccessed": 1780392343965,
       "type": "file"
     },
     {
