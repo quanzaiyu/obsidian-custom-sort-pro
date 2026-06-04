@@ -625,6 +625,19 @@ export class DragDropTree {
 				continue;
 			}
 
+			// 查找排序值：尝试匹配带 .md 后缀和不带后缀的两种形式
+			let sortOrder = sortMap.get(nameWithoutExt);
+			if (sortOrder === undefined) {
+				// 尝试带 .md 后缀
+				sortOrder = sortMap.get(child.name);
+			}
+
+			// 查找自定义图标：同样尝试两种形式
+			let customIcon = icons[nameWithoutExt];
+			if (!customIcon) {
+				customIcon = icons[child.name];
+			}
+
 			const node: TreeNode = {
 				id: child.path,
 				name: child.name,
@@ -634,11 +647,11 @@ export class DragDropTree {
 				hasChildren: child instanceof TFolder && child.children.length > 0,
 				expanded: this.expandedPaths.has(child.path),
 				loaded: false,
-				sortOrder: sortMap.get(nameWithoutExt)
+				sortOrder
 			};
 
-			if (icons[nameWithoutExt]) {
-				node.customIcon = icons[nameWithoutExt];
+			if (customIcon) {
+				node.customIcon = customIcon;
 			}
 
 			nodes.push(node);
@@ -734,7 +747,7 @@ export class DragDropTree {
 					// 	const newPath = `${name}.excalidraw.md`;
 					// 	await this.app.vault.create(newPath, content);
 					// }
-						const content = `
+					const content = `
 ---
 
 excalidraw-plugin: parsed
@@ -793,8 +806,8 @@ tags: [excalidraw]
 \`\`\`
 %%
 						`
-						const newPath = `${name}.excalidraw.md`;
-						await this.app.vault.create(newPath, content);
+					const newPath = `${name}.excalidraw.md`;
+					await this.app.vault.create(newPath, content);
 				});
 			});
 		});
@@ -1355,15 +1368,27 @@ tags: [excalidraw]
 		const rect = itemEl.getBoundingClientRect();
 		const relativeY = e.clientY - rect.top;
 
-		if (targetNode.type === 'folder' && relativeY >= rect.height * 0.75) {
-			itemEl.classList.add('drag-over-folder');
-			this.dropMode = 'folder';
-		} else if (relativeY < rect.height / 2) {
-			itemEl.classList.add('drop-before');
-			this.dropMode = 'before';
+		if (targetNode.type === 'folder') {
+			// 文件夹：上半部分触发 before，后半部分触发 folder（移动到文件夹）
+			if (relativeY < rect.height / 3) {
+				itemEl.classList.add('drop-before');
+				this.dropMode = 'before';
+			} else if (relativeY > rect.height * 2 / 3) {
+				itemEl.classList.add('drop-after');
+				this.dropMode = 'after';
+			} else {
+				itemEl.classList.add('drag-over-folder');
+				this.dropMode = 'folder';
+			}
 		} else {
-			itemEl.classList.add('drop-after');
-			this.dropMode = 'after';
+			// 文件：根据位置判断是 before 还是 after
+			if (relativeY < rect.height / 2) {
+				itemEl.classList.add('drop-before');
+				this.dropMode = 'before';
+			} else {
+				itemEl.classList.add('drop-after');
+				this.dropMode = 'after';
+			}
 		}
 	}
 

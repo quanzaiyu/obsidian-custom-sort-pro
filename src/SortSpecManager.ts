@@ -80,6 +80,51 @@ export class SortSpecManager {
 				}
 			}
 
+			// 获取目录中实际存在的文件，用于去重和验证
+			const folder = this.app.vault.getFolderByPath(path === '' ? '/' : path);
+			if (folder) {
+				const existingNames = new Set<string>();
+				const existingNamesWithExt = new Set<string>();
+
+				for (const child of folder.children) {
+					existingNames.add(child.name.endsWith('.md') ? child.name.slice(0, -3) : child.name);
+					existingNamesWithExt.add(child.name);
+				}
+
+				// 过滤：去重并只保留存在的文件
+				const seen = new Set<string>();
+				const seenWithExt = new Set<string>();
+				const filteredSpec: string[] = [];
+
+				for (const name of sortingSpec) {
+					const nameWithoutExt = name.endsWith('.md') ? name.slice(0, -3) : name;
+
+					// 检查是否已存在（用去重后的名称）
+					if (seen.has(nameWithoutExt)) continue;
+					if (seenWithExt.has(name)) continue;
+
+					// 检查是否在目录中存在（支持带或不带 .md 后缀）
+					const exists = existingNames.has(nameWithoutExt) || existingNamesWithExt.has(name);
+					if (!exists) continue;
+
+					seen.add(nameWithoutExt);
+					seenWithExt.add(name);
+					filteredSpec.push(name);
+				}
+
+				sortingSpec = filteredSpec;
+
+				// 同时清理 customIcons，只保留存在的项
+				const cleanedIcons: Record<string, string> = {};
+				for (const [key, value] of Object.entries(customIcons)) {
+					const keyWithoutExt = key.endsWith('.md') ? key.slice(0, -3) : key;
+					if (existingNames.has(keyWithoutExt) || existingNamesWithExt.has(key)) {
+						cleanedIcons[key] = value;
+					}
+				}
+				customIcons = cleanedIcons;
+			}
+
 			return { sortingSpec, customIcons };
 		} catch (error) {
 			console.error('读取sortspec失败:', error);
