@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1780456979297,
-  "projectRoot": "d:\\projects\\my_project\\obsidian-custom-sort-pro",
+  "lastScanned": 1781008989074,
+  "projectRoot": "d:\\Projects\\obsidian-custom-sort",
   "techStack": {
     "languages": [
       {
@@ -28,14 +28,14 @@
         "category": "build"
       }
     ],
-    "packageManager": "npm",
+    "packageManager": "yarn",
     "runtime": "Node.js 20.0.0"
   },
   "build": {
-    "buildCommand": "npm run build",
-    "testCommand": "npm test",
+    "buildCommand": "yarn build",
+    "testCommand": "yarn test",
     "lintCommand": null,
-    "devCommand": "npm run dev",
+    "devCommand": "yarn dev",
     "scripts": {
       "dev": "node esbuild.config.mjs --entry=src/main.ts --out=dist/main.js",
       "build": "node esbuild.config.mjs production --entry=src/main.ts --out=dist/main.js",
@@ -67,7 +67,7 @@
       "path": "dist",
       "purpose": "Distribution/build output",
       "fileCount": 3,
-      "lastAccessed": 1780456979224,
+      "lastAccessed": 1781008989023,
       "keyFiles": [
         "icons.json",
         "main.js",
@@ -78,7 +78,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 1,
-      "lastAccessed": 1780456979226,
+      "lastAccessed": 1781008989024,
       "keyFiles": [
         "完整的Obsidian文件管理器.md"
       ]
@@ -87,7 +87,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 11,
-      "lastAccessed": 1780456979263,
+      "lastAccessed": 1781008989053,
       "keyFiles": [
         "DragDropTree.ts",
         "IconPickerModal.ts",
@@ -99,45 +99,15 @@
   },
   "hotPaths": [
     {
-      "path": "src\\DragDropTree.ts",
-      "accessCount": 163,
-      "lastAccessed": 1780544717832,
-      "type": "file"
-    },
-    {
       "path": "src\\SortSpecManager.ts",
-      "accessCount": 12,
-      "lastAccessed": 1780542652026,
-      "type": "file"
-    },
-    {
-      "path": "src\\styles.css",
       "accessCount": 8,
-      "lastAccessed": 1780457616143,
+      "lastAccessed": 1781009283388,
       "type": "file"
     },
     {
-      "path": "src\\IconPickerModal.ts",
-      "accessCount": 5,
-      "lastAccessed": 1780384312401,
-      "type": "directory"
-    },
-    {
-      "path": "src\\main.ts",
-      "accessCount": 3,
-      "lastAccessed": 1780307012890,
-      "type": "file"
-    },
-    {
-      "path": "src\\MySortView.ts",
-      "accessCount": 3,
-      "lastAccessed": 1780307022015,
-      "type": "file"
-    },
-    {
-      "path": "src\\RecentIconsManager.ts",
-      "accessCount": 3,
-      "lastAccessed": 1780384276185,
+      "path": "src\\DragDropTree.ts",
+      "accessCount": 4,
+      "lastAccessed": 1781009074701,
       "type": "file"
     }
   ],

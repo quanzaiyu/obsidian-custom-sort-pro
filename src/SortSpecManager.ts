@@ -43,20 +43,25 @@ export class SortSpecManager {
 		}
 
 		const sortspecPath = this.getSortSpecPath(path);
+		console.log(`[SortSpecManager] 加载路径: ${folderPath} -> sortspecPath: ${sortspecPath}`);
 		const file = this.app.vault.getAbstractFileByPath(sortspecPath);
 
 		if (!(file instanceof TFile)) {
+			console.log(`[SortSpecManager] 文件不存在: ${sortspecPath}`);
 			return null;
 		}
 
 		try {
 			const content = await this.app.vault.read(file);
-			const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+			console.log(`[SortSpecManager] 文件内容长度: ${content.length}`);
+			const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 
 			if (!frontmatterMatch) {
+				console.log(`[SortSpecManager] frontmatter 解析失败`);
 				return null;
 			}
 
+			console.log(`[SortSpecManager] frontmatter 原始内容:\n${frontmatterMatch[1]}`);
 			const frontmatter = parseYaml(frontmatterMatch[1]);
 
 			// 解析 sorting-spec
@@ -91,6 +96,8 @@ export class SortSpecManager {
 					existingNamesWithExt.add(child.name);
 				}
 
+				console.log(`[SortSpecManager] 目录中存在的文件: ${JSON.stringify([...existingNames])}`);
+
 				// 过滤：去重并只保留存在的文件
 				const seen = new Set<string>();
 				const seenWithExt = new Set<string>();
@@ -105,13 +112,17 @@ export class SortSpecManager {
 
 					// 检查是否在目录中存在（支持带或不带 .md 后缀）
 					const exists = existingNames.has(nameWithoutExt) || existingNamesWithExt.has(name);
-					if (!exists) continue;
+					if (!exists) {
+						console.log(`[SortSpecManager] 过滤掉不存在的项: ${name}`);
+						continue;
+					}
 
 					seen.add(nameWithoutExt);
 					seenWithExt.add(name);
 					filteredSpec.push(name);
 				}
 
+				console.log(`[SortSpecManager] 过滤后 sortingSpec: ${JSON.stringify(filteredSpec)}`);
 				sortingSpec = filteredSpec;
 
 				// 同时清理 customIcons，只保留存在的项
