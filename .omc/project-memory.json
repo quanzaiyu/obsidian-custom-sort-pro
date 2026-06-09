@@ -100,20 +100,20 @@
   "hotPaths": [
     {
       "path": "src\\DragDropTree.ts",
-      "accessCount": 148,
-      "lastAccessed": 1780472988024,
+      "accessCount": 163,
+      "lastAccessed": 1780544717832,
+      "type": "file"
+    },
+    {
+      "path": "src\\SortSpecManager.ts",
+      "accessCount": 12,
+      "lastAccessed": 1780542652026,
       "type": "file"
     },
     {
       "path": "src\\styles.css",
       "accessCount": 8,
       "lastAccessed": 1780457616143,
-      "type": "file"
-    },
-    {
-      "path": "src\\SortSpecManager.ts",
-      "accessCount": 7,
-      "lastAccessed": 1780388620661,
       "type": "file"
     },
     {

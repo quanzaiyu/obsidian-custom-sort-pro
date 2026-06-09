@@ -625,6 +625,19 @@ export class DragDropTree {
 				continue;
 			}
 
+			// 查找排序值：尝试匹配带 .md 后缀和不带后缀的两种形式
+			let sortOrder = sortMap.get(nameWithoutExt);
+			if (sortOrder === undefined) {
+				// 尝试带 .md 后缀
+				sortOrder = sortMap.get(child.name);
+			}
+
+			// 查找自定义图标：同样尝试两种形式
+			let customIcon = icons[nameWithoutExt];
+			if (!customIcon) {
+				customIcon = icons[child.name];
+			}
+
 			const node: TreeNode = {
 				id: child.path,
 				name: child.name,
@@ -634,11 +647,11 @@ export class DragDropTree {
 				hasChildren: child instanceof TFolder && child.children.length > 0,
 				expanded: this.expandedPaths.has(child.path),
 				loaded: false,
-				sortOrder: sortMap.get(nameWithoutExt)
+				sortOrder
 			};
 
-			if (icons[nameWithoutExt]) {
-				node.customIcon = icons[nameWithoutExt];
+			if (customIcon) {
+				node.customIcon = customIcon;
 			}
 
 			nodes.push(node);
@@ -734,7 +747,7 @@ export class DragDropTree {
 					// 	const newPath = `${name}.excalidraw.md`;
 					// 	await this.app.vault.create(newPath, content);
 					// }
-						const content = `
+					const content = `
 ---
 
 excalidraw-plugin: parsed
@@ -793,8 +806,8 @@ tags: [excalidraw]
 \`\`\`
 %%
 						`
-						const newPath = `${name}.excalidraw.md`;
-						await this.app.vault.create(newPath, content);
+					const newPath = `${name}.excalidraw.md`;
+					await this.app.vault.create(newPath, content);
 				});
 			});
 		});
@@ -1365,15 +1378,27 @@ tags: [excalidraw]
 		const rect = itemEl.getBoundingClientRect();
 		const relativeY = e.clientY - rect.top;
 
-		if (targetNode.type === 'folder' && relativeY >= rect.height * 0.75) {
-			itemEl.classList.add('drag-over-folder');
-			this.dropMode = 'folder';
-		} else if (relativeY < rect.height / 2) {
-			itemEl.classList.add('drop-before');
-			this.dropMode = 'before';
+		if (targetNode.type === 'folder') {
+			// 文件夹：上半部分触发 before，后半部分触发 folder（移动到文件夹）
+			if (relativeY < rect.height / 3) {
+				itemEl.classList.add('drop-before');
+				this.dropMode = 'before';
+			} else if (relativeY > rect.height * 2 / 3) {
+				itemEl.classList.add('drop-after');
+				this.dropMode = 'after';
+			} else {
+				itemEl.classList.add('drag-over-folder');
+				this.dropMode = 'folder';
+			}
 		} else {
-			itemEl.classList.add('drop-after');
-			this.dropMode = 'after';
+			// 文件：根据位置判断是 before 还是 after
+			if (relativeY < rect.height / 2) {
+				itemEl.classList.add('drop-before');
+				this.dropMode = 'before';
+			} else {
+				itemEl.classList.add('drop-after');
+				this.dropMode = 'after';
+			}
 		}
 	}
 
@@ -1404,10 +1429,10 @@ tags: [excalidraw]
 
 		try {
 			if (this.dropMode === 'folder' && targetNode.type === 'folder') {
-				// 批量移动到目标文件夹
+				// 批量移动到目标文件夹（包括文件和文件夹）
 				for (const path of selectedPaths) {
 					const node = this.findNodeByPath(path, this.tree);
-					if (node && node.type !== 'folder') {
+					if (node) {
 						await this.moveIntoFolder(node, targetNode, true);
 					}
 				}
@@ -1417,14 +1442,14 @@ tags: [excalidraw]
 				const targetPath = this.getParentPath(targetNode.path);
 
 				if (sourcePath === targetPath) {
-					// 同文件夹批量排序
+					// 同文件夹批量排序（包括文件和文件夹）
 					await this.reorderMultipleInSameFolder(selectedPaths, targetNode, this.dropMode === 'after' ? 'after' : 'before');
 				} else {
-					// 跨文件夹批量移动
+					// 跨文件夹批量移动（包括文件和文件夹）
 					let movedCount = 0;
 					for (const path of selectedPaths) {
 						const node = this.findNodeByPath(path, this.tree);
-						if (node && node.type !== 'folder') {
+						if (node) {
 							const nodeSourcePath = this.getParentPath(node.path);
 							if (nodeSourcePath === targetPath) {
 								// 已经在目标文件夹，跳过
@@ -1528,21 +1553,33 @@ tags: [excalidraw]
 		new Notice(`已更新排序`);
 	}
 
-	// 修改 moveIntoFolder 支持静默模式
+	// 修改 moveIntoFolder 支持静默模式，同时支持文件和文件夹
 	private async moveIntoFolder(dragNode: TreeNode, targetFolder: TreeNode, silent: boolean = false): Promise<void> {
 		const sourcePath = this.getParentPath(dragNode.path);
 		const newPath = targetFolder.path === '/' ? `/${dragNode.name}` : `${targetFolder.path}/${dragNode.name}`;
 
 		try {
-			const file = this.app.vault.getAbstractFileByPath(dragNode.path);
-			if (!file) {
-				if (!silent) new Notice('文件未找到');
+			const abstractFile = this.app.vault.getAbstractFileByPath(dragNode.path);
+			if (!abstractFile) {
+				if (!silent) new Notice('项目未找到');
 				return;
 			}
 
-			await this.app.vault.rename(file, newPath);
-			await this.sortSpecManager.removeItem(sourcePath, dragNode.name);
-			await this.sortSpecManager.addItem(targetFolder.path, dragNode.name);
+			await this.app.vault.rename(abstractFile, newPath);
+
+			// 更新排序文件
+			if (dragNode.type === 'folder') {
+				// 移动文件夹：更新源文件夹和目标文件夹的 sortspec
+				await this.sortSpecManager.removeItem(sourcePath, dragNode.name);
+				await this.sortSpecManager.addItem(targetFolder.path, dragNode.name);
+
+				// 递归更新子文件夹的排序文件路径
+				await this.updateChildSortSpecPaths(dragNode.path, newPath);
+			} else {
+				// 移动文件
+				await this.sortSpecManager.removeItem(sourcePath, dragNode.name);
+				await this.sortSpecManager.addItem(targetFolder.path, dragNode.name);
+			}
 
 			if (!silent) {
 				new Notice(`已将 "${dragNode.name}" 移动到 "${targetFolder.name}"`);
@@ -1563,6 +1600,31 @@ tags: [excalidraw]
 			this.plugin.updateExpandedPath(targetFolder.path, true);
 		} catch (error) {
 			if (!silent) new Notice('移动失败: ' + (error as Error).message);
+		}
+	}
+
+	// 递归更新子文件夹的排序文件路径
+	private async updateChildSortSpecPaths(oldParentPath: string, newParentPath: string): Promise<void> {
+		const folder = this.app.vault.getFolderByPath(newParentPath);
+		if (!folder) return;
+
+		for (const child of folder.children) {
+			if (child instanceof TFolder) {
+				const childOldPath = `${oldParentPath}/${child.name}`;
+				const childNewPath = `${newParentPath}/${child.name}`;
+
+				// 更新子文件夹的排序文件
+				const childOldSpecPath = this.sortSpecManager.getSortSpecPath(childOldPath);
+				const childNewSpecPath = this.sortSpecManager.getSortSpecPath(childNewPath);
+
+				const oldSpecFile = this.app.vault.getAbstractFileByPath(childOldSpecPath);
+				if (oldSpecFile instanceof TFile) {
+					await this.app.vault.rename(oldSpecFile, childNewSpecPath);
+				}
+
+				// 递归处理更深的子文件夹
+				await this.updateChildSortSpecPaths(childOldPath, childNewPath);
+			}
 		}
 	}
 
