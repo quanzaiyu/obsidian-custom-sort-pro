@@ -109,6 +109,24 @@
       "accessCount": 4,
       "lastAccessed": 1781009074701,
       "type": "file"
+    },
+    {
+      "path": "src\\main.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781012750418,
+      "type": "file"
+    },
+    {
+      "path": "manifest.json",
+      "accessCount": 2,
+      "lastAccessed": 1781012752490,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 2,
+      "lastAccessed": 1781012771765,
+      "type": "file"
     }
   ],
   "userDirectives": []

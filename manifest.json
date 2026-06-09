@@ -1,10 +1,10 @@
 {
-	"id": "custom-sort-folder-view",
-	"name": "Custom Sort Folder View",
+	"id": "custom-folder",
+	"name": "Custom Folder",
 	"version": "3.2.0",
 	"minAppVersion": "1.8.0",
-	"description": "Obsidian 自定义排序文件夹视图插件 - 可视化拖拽排序，自定义图标，多级目录支持",
+	"description": "Obsidian 自定义文件夹排序视图插件 - 可视化拖拽排序，自定义图标，多级目录支持",
 	"author": "quanzaiyu",
-	"authorUrl": "https://github.com/quanzaiyu/obsidian-custom-sort-folder-view",
+	"authorUrl": "https://github.com/quanzaiyu/obsidian-custom-folder",
 	"isDesktopOnly": false
 }

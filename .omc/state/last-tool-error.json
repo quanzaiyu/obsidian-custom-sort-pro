@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"grep -r \\\"addRibbonIcon\\\\|ribbon\\\" d:\\\\Projects\\\\obsidian-custom-sort\\\\src --include=\\\"*.ts\\\"\"}",
+  "error": "Exit code 2\ngrep: d:Projectsobsidian-custom-sortsrc: No such file or directory",
+  "timestamp": "2026-06-09T13:45:07.401Z",
+  "retry_count": 1
+}

@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-custom-sort",
+	"name": "obsidian-custom-folder",
 	"version": "3.1.7",
-	"description": "Custom Sort plugin for Obsidian (https://obsidian.md)",
+	"description": "Custom Folder plugin for Obsidian (https://obsidian.md)",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -15,7 +15,7 @@
 		"custom sorting"
 	],
 	"author": "SebastianMC",
-	"repository": "https://github.com/SebastianMC/obsidian-custom-sort",
+	"repository": "https://github.com/quanzaiyu/obsidian-custom-folder",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^22.15.29",

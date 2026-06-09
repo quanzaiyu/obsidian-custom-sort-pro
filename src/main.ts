@@ -15,7 +15,7 @@ export default class CustomSortV2Plugin extends Plugin {
 
 		// 添加 Ribbon 图标（仅桌面端）
 		if (Platform.isDesktop) {
-			this.ribbonIconEl = this.addRibbonIcon('list-ordered', '打开自定义排序视图', async () => {
+			this.ribbonIconEl = this.addRibbonIcon('layers', '打开自定义排序视图', async () => {
 				await this.openView();
 			});
 		}
